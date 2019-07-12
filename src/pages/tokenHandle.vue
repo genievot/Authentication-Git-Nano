@@ -118,6 +118,7 @@ export default {
         // create new account
         this.$q.loading.show({ message: 'Please wait, while sending you confirmation email.' })
         this.emailPassClient.registerWithEmail(this.emailSelected, this.password).then(() => {
+          this.$q.localStorage.set('authCredentials', credential)
           this.$q.localStorage.set('selectedEmail', this.emailSelected)
           this.$q.notify({
             color: 'green',
@@ -187,7 +188,9 @@ export default {
           this.$q.localStorage.set('userAllocatedId', authedUser.id)
           this.$db.collection('userInfo').find({}, { user_auth_id: authedUser.id }).asArray().then((docs) => {
             console.log(docs)
+            this.$q.localStorage.set('userSecDetails', docs)
             console.log('[MongoDB Stitch] Connected to Stitch')
+            window.location = this.$frontEnd
           }).catch(err => {
             console.error(err)
           })

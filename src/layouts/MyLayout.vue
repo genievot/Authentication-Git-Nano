@@ -97,6 +97,13 @@ export default {
   },
   mounted () {
     console.log(this.$i18n.locale)
+    if (this.$q.localStorage.getItem('userSecDetails')) {
+      this.notLogged = false
+    } else {
+      this.notLogged = true
+    }
+    console.log(this.$q.localStorage.getItem('userSecDetails'))
+    // console.log(this.$q.localStorage.getItem('userLogged'))
   }
 }
 </script>
