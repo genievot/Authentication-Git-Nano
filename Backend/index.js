@@ -61,15 +61,18 @@ app.get('/getAccessToken', function (req, res, next) {
           let oldData = db.get('users').find({ node_id: meResult.data.node_id }).value()
           // console.log(oldData);
           if (oldData) {
+            let lastLogin = new Date()
             db.get('users')
               .find({ node_id: meResult.data.node_id })
-              .assign({ result: meResult.data, access_token: accessToken, state: req.query.state, emails: mailR.data })
+              .assign({ result: meResult.data, access_token: accessToken, state: req.query.state, emails: mailR.data, last_login: lastLogin.toString() })
               .write()
             console.log(oldData.confirmed_email)
             res.send({ status: 'OK_ACCESS_TOKEN_AND_SAVED_SIGNED', nodeId: meResult.data.node_id, login: meResult.data.login, emails: mailR.data, confirmed_email: oldData.confirmed_email })
           } else {
+            let accountCreated = new Date()
+            let lastLogin = new Date()
             db.get('users')
-              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null })
+              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString() })
               .write()
             // { accessToken: accessToken, state: req.query.state, nodeId: meResult.node_id, userName: meResult.login, email: meResult.email}
             db.update('count', n => n + 1)
@@ -115,7 +118,8 @@ app.get('/setupUserConfirmaion', (req, res, next) => {
       user_name: userData.result.login,
       avatar_url: userData.result.avatar_url,
       repos_url: userData.result.repos_url,
-      gists_url: userData.result.gists_url
+      gists_url: userData.result.gists_url,
+      account_creation_date: userData.account_created
     }
     let objects = { ...data, ...resAcc }
     res.send(objects)
