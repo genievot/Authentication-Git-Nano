@@ -11,6 +11,7 @@
 export default {
   name: 'confirmEmail',
   mounted () {
+    // this.db = this.$stitchClient.getServiceClient(this.$remoteMongoClient.factory, 'mongodb-atlas').db('nanoGit')
     this.$q.loading.show({
       message: 'Please wait while confirming you address'
     })
@@ -30,13 +31,14 @@ export default {
           }
         }).then((response) => {
           console.log(this.$q.localStorage.getItem('selectedEmail'))
-          console.log(response)
+          // console.log(response)
+          this.$q.localStorage.set('userSecDetails', response.data)
           this.$stitchClient.auth.loginWithCredential(this.$q.localStorage.getItem('authCredentials')).then((authedUser) => {
             let moreData = {
               user_auth_id: authedUser.id
             }
             let dataToInsert = { ...response.data, ...moreData }
-            this.db.collection('userInfo').insertOne(dataToInsert)
+            this.$db.collection('userInfo').insertOne(dataToInsert)
           }).catch(err => {
             console.error(err)
           })

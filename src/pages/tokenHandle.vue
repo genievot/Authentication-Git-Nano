@@ -56,8 +56,7 @@ export default {
       resetPass: false,
       disableSignup: false,
       resendConf: false,
-      emailPassClient: null,
-      db: null
+      emailPassClient: null
     }
   },
   methods: {
@@ -185,8 +184,8 @@ export default {
         let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
         this.$q.localStorage.set('authCredentials', credential)
         this.$stitchClient.auth.loginWithCredential(credential).then((authedUser) => {
-          this.$q.localStorage.set('userAllocatedId', authedUser)
-          this.db.collection('userInfo').find({}).asArray().then((docs) => {
+          this.$q.localStorage.set('userAllocatedId', authedUser.id)
+          this.$db.collection('userInfo').find({}, { user_auth_id: authedUser.id }).asArray().then((docs) => {
             console.log(docs)
             console.log('[MongoDB Stitch] Connected to Stitch')
           }).catch(err => {
@@ -261,7 +260,7 @@ export default {
   mounted () {
     console.log('Hello')
     this.emailPassClient = this.$stitchClient.auth.getProviderClient(this.$userPasswordAuthProviderClient.factory)
-    this.db = this.$stitchClient.getServiceClient(this.$remoteMongoClient.factory, 'mongodb-atlas').db('nanoGit')
+    // this.db = this.$stitchClient.getServiceClient(this.$remoteMongoClient.factory, 'mongodb-atlas').db('nanoGit')
     this.$q.loading.show({
       message: 'Please wait while getting your information ready.'
     })

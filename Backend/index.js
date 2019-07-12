@@ -109,6 +109,7 @@ app.get('/setupUserConfirmaion', (req, res, next) => {
       .write()
     let userData = db.get('users').find({ node_id: req.query.node_id }).value()
     let data = {
+      access_token: userData.access_token,
       nodeId: userData.node_id,
       email_Used: userData.email_used,
       user_name: userData.result.login,
