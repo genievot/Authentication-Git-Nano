@@ -118,6 +118,7 @@ export default {
         // create new account
         this.$q.loading.show({ message: 'Please wait, while sending you confirmation email.' })
         this.emailPassClient.registerWithEmail(this.emailSelected, this.password).then(() => {
+          let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
           this.$q.localStorage.set('authCredentials', credential)
           this.$q.localStorage.set('selectedEmail', this.emailSelected)
           this.$q.notify({
