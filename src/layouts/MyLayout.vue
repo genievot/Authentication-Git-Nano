@@ -31,7 +31,7 @@
               class="bg-orange q-ml-sm"
               dense
               round
-              @click="leftDrawerOpen = !leftDrawerOpen"
+              @click="showNanoSendDialog = true"
               aria-label="Make Transaction"
             >
               <q-icon name="attach_money" class="text-white"/>
@@ -63,7 +63,7 @@
 
         <q-card-section align="center">
           <span>Account</span>
-        <q-input standout v-model="userWallet.account" readonly>
+        <q-input v-if="userWallet.account" standout v-model="userWallet.account" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
         </template>
@@ -121,6 +121,78 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <!-- Transfer Nano dialog -->
+      <q-dialog v-model="showNanoSendDialog" persistent  maximized>
+      <q-card align="center">
+        <q-card-section align="center">
+          <q-btn
+            fab-mini
+            style="transform: translateY(-75%);"
+            color="white text-black"
+            icon="minimize"
+            @click="showNanoSendDialog=false"
+          />
+        </q-card-section>
+        <q-card-section>
+          <div class="q-pa-md" style="max-width: 80vw">
+
+            <q-form
+              @submit="onSubmit"
+              @reset="onReset"
+              class="q-gutter-md"
+            >
+              <div class="q-pa-md">
+                <div class="q-gutter-md row">
+                  <q-select
+                    filled
+                    v-model="selectedUser"
+                    use-input
+                    hide-selected
+                    fill-input
+                    input-debounce="0"
+                    :options="allUserNames"
+                    @filter="filterFn"
+                    hint="Mininum 2 characters to trigger autocomplete"
+                    style="width: 250px; padding-bottom: 32px"
+                  >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section class="text-grey">
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                </div>
+              </div>
+              <q-input
+                filled
+                v-model="gitUserName"
+                label="Github Username *"
+                lazy-rules
+                :rules="[ val => val && val.length > 0 || 'Please type something']"
+              />
+              <q-input
+                filled
+                type="number"
+                v-model="amountToSend"
+                label="Amount to send in Naneroo*"
+                lazy-rules
+                :rules="[
+                  val => val !== null && val !== '' || 'Please type your age',
+                  val => val > 0 && val < 100 || 'Please type a real age'
+                ]"
+              />
+              <div>
+                <q-btn label="Send" type="submit" color="orange" icon="attach_money">
+                  </q-btn>
+              </div>
+            </q-form>
+
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -128,6 +200,7 @@
 </template>
 
 <script>
+let allUsers = []
 export default {
   name: 'MyLayout',
   data () {
@@ -138,7 +211,12 @@ export default {
       showUserWalletDialog: false,
       showNanoSendDialog: false,
       userWallet: '0',
-      isPwd: true
+      gitUserName: '',
+      amountToSend: '',
+      filterUsers: [],
+      isPwd: true,
+      allUserNames: allUsers,
+      selectedUser: null
     }
   },
   methods: {
@@ -152,13 +230,45 @@ export default {
       // let win = window.open(url, '_blank')
       // win.focus()
       window.location = url
+    },
+    onSubmit () {
+      console.log('"Hello"')
+    },
+    onReset () {
+      console.log('"Hello"')
+    },
+    filterFn (val, update, abort) {
+      if (val.length < 2) {
+        abort()
+        return
+      }
+      update(() => {
+        let userName = val.toLowerCase()
+        this.filterUsers = allUsers.filter(v => v.toLowerCase().indexOf(userName) > -1)
+      })
     }
   },
   mounted () {
     console.log(this.$i18n.locale)
+    this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
+      this.$db.collection('publicUserInfo').find({}).asArray().then((docs) => {
+        console.log(docs)
+        this.allUsers = docs
+        console.log('[MongoDB Stitch] Connected to Stitch')
+        // window.location = this.$frontEnd
+      }).catch(err => {
+        this.$q.loading.hide()
+        console.error(err)
+      })
+    })
     if (this.$q.localStorage.getItem('userSecDetails')) {
       this.notLogged = false
-      this.userWallet = this.$q.localStorage.getItem('userSecDetails')
+      let userSecData = this.$q.localStorage.getItem('userSecDetails')
+      if (Array.isArray(userSecData)) {
+        this.userWallet = userSecData[0]
+      } else {
+        this.userWallet = userSecData
+      }
     } else {
       this.notLogged = true
     }

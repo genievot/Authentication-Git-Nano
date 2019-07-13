@@ -30,17 +30,19 @@ export default {
             emailUsed: this.$q.localStorage.getItem('selectedEmail')
           }
         }).then((response) => {
-          console.log(this.$q.localStorage.getItem('selectedEmail'))
+          // console.log(this.$q.localStorage.getItem('selectedEmail'))
           // console.log(response)
           this.$q.localStorage.set('userSecDetails', response.data)
-          console.log(this.$q.localStorage.getItem('authCredentials'))
+          // console.log(this.$q.localStorage.getItem('authCredentials'))
           this.$stitchClient.auth.loginWithCredential(this.$q.localStorage.getItem('authCredentials')).then((authedUser) => {
             let moreData = {
               user_auth_id: authedUser.id
             }
             let dataToInsert = { ...response.data, ...moreData }
+            let publicDataToInsert = { account: response.data.account, userName: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
             try {
               this.$db.collection('userInfo').insertOne(dataToInsert)
+              this.$db.collection('publicUserInfo').insertOne(publicDataToInsert)
             } catch (e) {
               console.log(e)
             }

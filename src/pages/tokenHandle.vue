@@ -195,7 +195,7 @@ export default {
           //   }
           // }).then((r) => {
           //   if () {}
-          this.$db.collection('userInfo').find({}, { user_auth_id: authedUser.id }).asArray().then((docs) => {
+          this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
             console.log(docs)
             this.$q.localStorage.set('userSecDetails', docs)
             console.log('[MongoDB Stitch] Connected to Stitch')
