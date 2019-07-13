@@ -62,8 +62,8 @@
         </q-card-section>
 
         <q-card-section align="center">
-          <span>Account</span>
-        <q-input v-if="userWallet.account" standout v-model="userWallet.account" readonly>
+          <span>Account (Please store it yourself safely)</span>
+        <q-input id="wallet-account" v-if="userWallet.account" standout @click.native="copyText('wallet-account')" v-model="userWallet.account" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
         </template>
@@ -71,15 +71,15 @@
         </q-card-section>
                 <q-card-section align="center">
           <span>Public Key</span>
-        <q-input standout v-model="userWallet.public" readonly>
+        <q-input id="wallet-public" standout v-model="userWallet.public" @click.native="copyText('wallet-public')" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
         </template>
         </q-input>
         </q-card-section>
       <q-card-section align="center">
-        <span>Private Key</span>
-        <q-input standout v-model="userWallet.private" :type="isPwd ? 'password' : 'text'" readonly>
+        <span>Private Key (Please store it yourself safely)</span>
+        <q-input id="wallet-private" standout v-model="userWallet.private" @click.native="copyText('wallet-private')" :type="isPwd ? 'password' : 'text'" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
         </template>
@@ -226,8 +226,42 @@ export default {
       // win.focus()
       window.location = url
     },
+    async copyText (txt) {
+      let copyTextarea = document.querySelector(`#${txt}`)
+      // copyTextarea.setAttribute('type', 'text')
+      console.log(copyTextarea)
+      copyTextarea.disabled = false
+      copyTextarea.focus()
+      copyTextarea.select()
+      try {
+        var successful = await document.execCommand('copy')
+        console.log(successful)
+        var msg = successful ? 'successful' : 'unsuccessful'
+        alert('Testing code was copied ' + msg)
+      } catch (err) {
+        alert('Oops, unable to copy')
+      } finally {
+        copyTextarea.disabled = true
+      }
+    },
     onSubmit () {
       console.log('"Hello"')
+      let dataGen = {
+        selected_user: this.selectedUser,
+        user_account: this.userWallet.account,
+        user_prk: this.userWallet.private
+      }
+      console.log(dataGen)
+      this.$axios.get(this.$backEnd + '/block/sendNano', { // AXIOS CALL
+        params: {
+          node_id: this.$q.localStorage.getItem('userLogged').nodeId
+        }
+      }).then((response) => {
+        console.log(response)
+        // Resend confirmation email if already singed up but not confirmed
+      }).catch((err) => {
+        console.log(err)
+      })
       // console.log(process.env.NINJA_API_KEY)
     },
     onReset () {

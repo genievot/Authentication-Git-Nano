@@ -103,6 +103,13 @@ app.get('/setUserRegistered', (req, res, next) => {
     .write()
 })
 
+app.get('/block/sendNano', (req, res, next) => {
+  db.get('users')
+    .find({ node_id: req.query.node_id })
+    .assign({ registered: true })
+    .write()
+})
+
 app.get('/setupUserConfirmaion', (req, res, next) => {
   nanoClient._send('key_create').then(resAcc => {
     // console.log(resAcc)
