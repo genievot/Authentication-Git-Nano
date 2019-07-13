@@ -58,7 +58,10 @@ module.exports = function (ctx) {
         'QAvatar',
         'QForm',
         'QSelect',
-        'QInput'
+        'QInput',
+        'QBar',
+        'QSpace',
+        'QTooltip'
       ],
 
       directives: [

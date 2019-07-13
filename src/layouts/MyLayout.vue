@@ -22,8 +22,8 @@
               class="bg-blue"
               dense
               round
-              @click="leftDrawerOpen = !leftDrawerOpen"
-              aria-label="Make Transaction"
+              @click="showUserWalletDialog = true"
+              aria-label="Show Account"
             >
               <q-icon name="person" class="text-white"/>
             </q-btn>
@@ -41,6 +41,61 @@
         </q-toolbar>
       </q-header>
       <!--Dialogs -->
+      <!-- Wallet Viewer Dialog -->
+    <q-dialog
+      v-model="showUserWalletDialog"
+      persistent
+      maximized
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <q-card class="bg-white text-blue-9">
+        <q-bar class="bg-white">
+          <q-space />
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          </q-btn>
+        </q-bar>
+
+        <q-card-section>
+          <div class="text-h6 row justify-center">Nano Wallet</div>
+        </q-card-section>
+
+        <q-card-section align="center">
+          <span>Account</span>
+        <q-input standout v-model="userWallet.account" readonly>
+        <template v-slot:prepend>
+          <q-icon name="file_copy" />
+        </template>
+        </q-input>
+        </q-card-section>
+                <q-card-section align="center">
+          <span>Public Key</span>
+        <q-input standout v-model="userWallet.public" readonly>
+        <template v-slot:prepend>
+          <q-icon name="file_copy" />
+        </template>
+        </q-input>
+        </q-card-section>
+      <q-card-section align="center">
+        <span>Private Key</span>
+        <q-input standout v-model="userWallet.private" :type="isPwd ? 'password' : 'text'" readonly>
+        <template v-slot:prepend>
+          <q-icon name="file_copy" />
+        </template>
+        </q-input>
+        </q-card-section>
+      <q-card-section align="center">
+        <q-btn round color="green-9" @click="isPwd = !isPwd">
+          <q-icon
+            :name="isPwd ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer text-white"
+          />
+          </q-btn>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+    <!-- Outh dialog -->
       <q-dialog v-model="showHideOauthDialog" persistent>
       <q-card>
         <q-card-section align="center">
@@ -79,7 +134,11 @@ export default {
     return {
       leftDrawerOpen: this.$q.platform.is.desktop,
       notLogged: true,
-      showHideOauthDialog: false
+      showHideOauthDialog: false,
+      showUserWalletDialog: false,
+      showNanoSendDialog: false,
+      userWallet: '0',
+      isPwd: true
     }
   },
   methods: {
@@ -99,6 +158,7 @@ export default {
     console.log(this.$i18n.locale)
     if (this.$q.localStorage.getItem('userSecDetails')) {
       this.notLogged = false
+      this.userWallet = this.$q.localStorage.getItem('userSecDetails')
     } else {
       this.notLogged = true
     }

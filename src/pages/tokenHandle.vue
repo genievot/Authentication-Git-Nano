@@ -183,9 +183,11 @@ export default {
           }
         })
       } else if (this.loginUser === true && this.resetPass === false) {
+        this.$q.loading.show()
         let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
         this.$q.localStorage.set('authCredentials', credential)
         this.$stitchClient.auth.loginWithCredential(credential).then((authedUser) => {
+          this.$q.loading.hide()
           this.$q.localStorage.set('userAllocatedId', authedUser.id)
           // this.$axios.get(this.$backEnd + '/nanoWalletCreatedAndDataStitchSavedChecked', { // AXIOS CALL
           //   params: {
@@ -199,12 +201,14 @@ export default {
             console.log('[MongoDB Stitch] Connected to Stitch')
             window.location = this.$frontEnd
           }).catch(err => {
+            this.$q.loading.hide()
             console.error(err)
           })
           // }).catch((e) => {})
           // this.db.collection('globalTxs').updateOne({ user_auth_id: authedUser.id })
           // this.db.collection('nanoWallets').updateOne({ user_auth_id: authedUser.id })
         }).catch((err) => {
+          this.$q.loading.hide()
           console.log(err)
           this.$q.notify({
             color: 'red',
