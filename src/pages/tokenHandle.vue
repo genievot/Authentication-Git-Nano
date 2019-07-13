@@ -187,6 +187,12 @@ export default {
         this.$q.localStorage.set('authCredentials', credential)
         this.$stitchClient.auth.loginWithCredential(credential).then((authedUser) => {
           this.$q.localStorage.set('userAllocatedId', authedUser.id)
+          // this.$axios.get(this.$backEnd + '/nanoWalletCreatedAndDataStitchSavedChecked', { // AXIOS CALL
+          //   params: {
+          //     node_id: this.$q.localStorage.getItem('userLogged').nodeId
+          //   }
+          // }).then((r) => {
+          //   if () {}
           this.$db.collection('userInfo').find({}, { user_auth_id: authedUser.id }).asArray().then((docs) => {
             console.log(docs)
             this.$q.localStorage.set('userSecDetails', docs)
@@ -195,6 +201,7 @@ export default {
           }).catch(err => {
             console.error(err)
           })
+          // }).catch((e) => {})
           // this.db.collection('globalTxs').updateOne({ user_auth_id: authedUser.id })
           // this.db.collection('nanoWallets').updateOne({ user_auth_id: authedUser.id })
         }).catch((err) => {

@@ -72,7 +72,7 @@ app.get('/getAccessToken', function (req, res, next) {
             let accountCreated = new Date()
             let lastLogin = new Date()
             db.get('users')
-              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString() })
+              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString(), dataSaved: false })
               .write()
             // { accessToken: accessToken, state: req.query.state, nodeId: meResult.node_id, userName: meResult.login, email: meResult.email}
             db.update('count', n => n + 1)
@@ -136,21 +136,42 @@ app.get('/isUserConfirmed', (req, res, next) => {
   // When signing user also assign confirmed_email to true
 })
 
-// app.get('/auth/getUserInfo', (req, res, next) => {
-//   axios({
-//     // make a POST request
-//     method: 'get',
-//     // to the Github authentication API, with the client ID, client secret
-//     // and request token
-//     url: `https://api.github.com/user`,
-//     // Set the content type header, so that we get the response in JSOn
-//     headers: {
-//          Authorization: 'token ' + req.query
-//     }}).then((meResult) => {
-//
-//     }).catch((err) => {
-//
-//     })
+// app.get('/nanoWalletCreatedAndDataStitchSavedChecked', (req, res, next) => {
+//   let user = db.get('users').find({ node_id: req.query.node_id }).value()
+//   if (req.query.node_id) {
+//     if (!user.nano_account) {
+//       checkNanoAccount(user)
+//     }
+//   }
+//   // When signing user also assign confirmed_email to true
 // })
+
+// function checkNanoAccount (userData) {
+//   if (userData.nano_account) {
+//     return 'Account Was Created'
+//   } else {
+//     nanoClient._send('key_create').then(resAcc => {
+//       let data = {
+//         access_token: userData.access_token,
+//         nodeId: userData.node_id,
+//         email_Used: userData.email_used,
+//         user_name: userData.result.login,
+//         avatar_url: userData.result.avatar_url,
+//         repos_url: userData.result.repos_url,
+//         gists_url: userData.result.gists_url,
+//         account_creation_date: userData.account_created
+//       }
+//       let objects = { ...data, ...resAcc }
+//       return objects
+//     }).catch(e => {
+//       console.log(e)
+//       return 'Again a problem occured when created Nano Account'
+//     })
+//   }
+// }
+
+// function checkDataSaved () {
+// Online mongodb stitch datasaved or not
+// }
 
 app.listen(3000)
