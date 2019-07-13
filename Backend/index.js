@@ -72,7 +72,7 @@ app.get('/getAccessToken', function (req, res, next) {
             let accountCreated = new Date()
             let lastLogin = new Date()
             db.get('users')
-              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString(), dataSaved: false })
+              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString(), dataSaved: null })
               .write()
             // { accessToken: accessToken, state: req.query.state, nodeId: meResult.node_id, userName: meResult.login, email: meResult.email}
             db.update('count', n => n + 1)
