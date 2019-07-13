@@ -142,7 +142,7 @@
               class="q-gutter-md"
             >
               <div class="q-pa-md">
-                <div class="q-gutter-md row">
+                <div class="q-gutter-md row justify-center">
                   <q-select
                     filled
                     v-model="selectedUser"
@@ -154,6 +154,9 @@
                     @filter="filterFn"
                     hint="Mininum 2 characters to trigger autocomplete"
                     style="width: 250px; padding-bottom: 32px"
+                    :rules="[
+                      val => val !== null && val !== '' || 'Please Select a User'
+                    ]"
                   >
                     <template v-slot:no-option>
                       <q-item>
@@ -167,20 +170,13 @@
               </div>
               <q-input
                 filled
-                v-model="gitUserName"
-                label="Github Username *"
-                lazy-rules
-                :rules="[ val => val && val.length > 0 || 'Please type something']"
-              />
-              <q-input
-                filled
                 type="number"
-                v-model="amountToSend"
+                v-model.number="amountToSend"
                 label="Amount to send in Naneroo*"
                 lazy-rules
                 :rules="[
-                  val => val !== null && val !== '' || 'Please type your age',
-                  val => val > 0 && val < 100 || 'Please type a real age'
+                  val => val !== null && val !== '' || 'Please enter your value',
+                  val => val > 0 || 'Please enter a real value'
                 ]"
               />
               <div>
@@ -200,7 +196,6 @@
 </template>
 
 <script>
-let allUsers = []
 export default {
   name: 'MyLayout',
   data () {
@@ -215,7 +210,7 @@ export default {
       amountToSend: '',
       filterUsers: [],
       isPwd: true,
-      allUserNames: allUsers,
+      allUserNames: [],
       selectedUser: null
     }
   },
@@ -233,6 +228,7 @@ export default {
     },
     onSubmit () {
       console.log('"Hello"')
+      // console.log(process.env.NINJA_API_KEY)
     },
     onReset () {
       console.log('"Hello"')
@@ -244,7 +240,7 @@ export default {
       }
       update(() => {
         let userName = val.toLowerCase()
-        this.filterUsers = allUsers.filter(v => v.toLowerCase().indexOf(userName) > -1)
+        this.filterUsers = this.allUserNames.filter(v => v.toLowerCase().indexOf(userName) > -1)
       })
     }
   },
@@ -253,7 +249,10 @@ export default {
     this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
       this.$db.collection('publicUserInfo').find({}).asArray().then((docs) => {
         console.log(docs)
-        this.allUsers = docs
+        for (let index = 0; index < docs.length; index++) {
+          this.allUserNames.push(docs[index].userName)
+        }
+        // this.allUsers = docs
         console.log('[MongoDB Stitch] Connected to Stitch')
         // window.location = this.$frontEnd
       }).catch(err => {
