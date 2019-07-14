@@ -28,6 +28,7 @@
               <q-icon name="person" class="text-white"/>
             </q-btn>
             <q-btn
+              v-if="isAccountOpened"
               class="bg-orange q-ml-sm"
               dense
               round
@@ -62,7 +63,7 @@
         </q-card-section>
 
         <q-card-section align="center">
-          <span>Account (Please store it yourself safely)</span>
+          <span class="text-red">Account (Please store it yourself safely)</span>
         <q-input id="wallet-account" v-if="userWallet.account" standout @click.native="copyText('wallet-account')" v-model="userWallet.account" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
@@ -70,7 +71,7 @@
         </q-input>
         </q-card-section>
                 <q-card-section align="center">
-          <span>Public Key</span>
+          <span class="text-red">Public Key (Please store it yourself safely)</span>
         <q-input id="wallet-public" standout v-model="userWallet.public" @click.native="copyText('wallet-public')" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
@@ -78,7 +79,7 @@
         </q-input>
         </q-card-section>
       <q-card-section align="center">
-        <span>Private Key (Please store it yourself safely)</span>
+        <span class="text-red">Private Key (Please store it yourself safely)</span>
         <q-input id="wallet-private" standout v-model="userWallet.private" @click.native="copyText('wallet-private')" :type="isPwd ? 'password' : 'text'" readonly>
         <template v-slot:prepend>
           <q-icon name="file_copy" />
@@ -92,6 +93,18 @@
             class="cursor-pointer text-white"
           />
           </q-btn>
+        </q-card-section>
+
+      <q-card-section v-if="!isAccountOpened" align="center">
+        <q-btn color="grey-9" @click="openNanoAccount()" label="Open Nano Account">
+          <q-icon
+            name="person"
+            class="cursor-pointer text-white"
+          />
+          </q-btn>
+        </q-card-section>
+        <q-card-section v-if="!isAccountOpened" align="center">
+          <span>Opening this Nano Account will let you send or receive nanos from here (it's free), If the account is not opened then you will see this above button.</span>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -134,6 +147,9 @@
           />
         </q-card-section>
         <q-card-section>
+          <div class="text-h6 row justify-center">Send Nano</div>
+        </q-card-section>
+        <q-card-section>
           <div class="q-pa-md" style="max-width: 80vw">
 
             <q-form
@@ -147,12 +163,13 @@
                     filled
                     v-model="selectedUser"
                     use-input
+                    label="Start typing User Name"
                     hide-selected
                     fill-input
                     input-debounce="0"
                     :options="allUserNames"
                     @filter="filterFn"
-                    hint="Mininum 2 characters to trigger autocomplete"
+                    hint="Mininum 1 character to trigger autocomplete"
                     style="width: 250px; padding-bottom: 32px"
                     :rules="[
                       val => val !== null && val !== '' || 'Please Select a User'
@@ -172,7 +189,7 @@
                 filled
                 type="number"
                 v-model.number="amountToSend"
-                label="Amount to send in Naneroo*"
+                label="Amount to send in NANO*"
                 lazy-rules
                 :rules="[
                   val => val !== null && val !== '' || 'Please enter your value',
@@ -207,11 +224,12 @@ export default {
       showNanoSendDialog: false,
       userWallet: '0',
       gitUserName: '',
-      amountToSend: '',
+      amountToSend: 0,
       filterUsers: [],
       isPwd: true,
       allUserNames: [],
-      selectedUser: null
+      selectedUser: null,
+      isAccountOpened: false
     }
   },
   methods: {
@@ -229,13 +247,13 @@ export default {
     async copyText (txt) {
       let copyTextarea = document.querySelector(`#${txt}`)
       // copyTextarea.setAttribute('type', 'text')
-      console.log(copyTextarea)
+      // console.log(copyTextarea)
       copyTextarea.disabled = false
       copyTextarea.focus()
       copyTextarea.select()
       try {
         var successful = await document.execCommand('copy')
-        console.log(successful)
+        // console.log(successful)
         var msg = successful ? 'successful' : 'unsuccessful'
         alert('Testing code was copied ' + msg)
       } catch (err) {
@@ -248,16 +266,19 @@ export default {
       console.log('"Hello"')
       let dataGen = {
         selected_user: this.selectedUser,
+        sender_userName: this.userWallet.user_name,
         user_account: this.userWallet.account,
-        user_prk: this.userWallet.private
+        user_prk: this.userWallet.private,
+        amount_sending: this.amountToSend
       }
-      console.log(dataGen)
+      // console.log(dataGen)
       this.$axios.get(this.$backEnd + '/block/sendNano', { // AXIOS CALL
         params: {
-          node_id: this.$q.localStorage.getItem('userLogged').nodeId
+          users_data: dataGen
         }
       }).then((response) => {
         console.log(response)
+        // this.showNanoSendDialog = false
         // Resend confirmation email if already singed up but not confirmed
       }).catch((err) => {
         console.log(err)
@@ -268,13 +289,31 @@ export default {
       console.log('"Hello"')
     },
     filterFn (val, update, abort) {
-      if (val.length < 2) {
+      if (val.length < 1) {
         abort()
         return
       }
       update(() => {
         let userName = val.toLowerCase()
         this.filterUsers = this.allUserNames.filter(v => v.toLowerCase().indexOf(userName) > -1)
+      })
+    },
+    openNanoAccount () {
+      let dataGen = {
+        user_account: this.userWallet.account,
+        user_prk: this.userWallet.private
+      }
+      // console.log(dataGen)
+      this.$axios.get(this.$backEnd + '/account/openAccount', { // AXIOS CALL
+        params: {
+          users_data: dataGen
+        }
+      }).then((response) => {
+        console.log(response)
+        // this.showNanoSendDialog = false
+        // Resend confirmation email if already singed up but not confirmed
+      }).catch((err) => {
+        console.log(err)
       })
     }
   },
@@ -305,6 +344,23 @@ export default {
     } else {
       this.notLogged = true
     }
+    this.$axios.get(this.$backEnd + '/account/isOpened', { // AXIOS CALL
+      params: {
+        user_account: this.userWallet.account
+      }
+    }).then((response) => {
+      if (response.data.error === 'Account not found') {
+        this.isAccountOpened = false
+      } else {
+        this.isAccountOpened = true
+      }
+    }).catch((err) => {
+      console.log(err)
+      this.$q.notify({
+        color: 'warning',
+        message: err
+      })
+    })
     console.log(this.$q.localStorage.getItem('userSecDetails'))
     // console.log(this.$q.localStorage.getItem('userLogged'))
   }

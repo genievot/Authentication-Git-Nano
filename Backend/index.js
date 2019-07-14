@@ -103,13 +103,6 @@ app.get('/setUserRegistered', (req, res, next) => {
     .write()
 })
 
-app.get('/block/sendNano', (req, res, next) => {
-  db.get('users')
-    .find({ node_id: req.query.node_id })
-    .assign({ registered: true })
-    .write()
-})
-
 app.get('/setupUserConfirmaion', (req, res, next) => {
   nanoClient._send('key_create').then(resAcc => {
     // console.log(resAcc)
@@ -143,6 +136,83 @@ app.get('/isUserConfirmed', (req, res, next) => {
   // When signing user also assign confirmed_email to true
 })
 
+app.get('/account/isOpened', (req, res, next) => {
+  // let data = JSON.parse(req.query.users_data)
+  // console.log(req.query.user_account)
+  nanoClient._send('account_info', { account: req.query.user_account }).then(resVal => {
+    console.log(resVal)
+    res.send(resVal)
+  }).catch(e => {
+    console.log(e)
+  })
+})
+
+app.get('/account/openAccount', (req, res, next) => {
+  let data = JSON.parse(req.query.users_data)
+  // console.log(req.query.user_account)
+  nanoClient._send('accounts_pending', { accounts: [data.user_account] }).then(resVal => {
+    console.log(resVal)
+    res.send(resVal)
+  }).catch(e => {
+    console.log(e)
+  })
+})
+
+app.get('/block/sendNano', (req, res, next) => {
+  let data = JSON.parse(req.query.users_data)
+  let userLdbData = db.get('users').find({ result: { login: data.selected_user.toLowerCase() } }).value()
+  if (userLdbData) {
+    sendNano(data, res, userLdbData)
+  } else {
+    res.send('USER_NANO_RECEIVER_NOT_FOUND')
+  }
+})
+async function sendNano (params, res, userldb) {
+  console.log(params.amount_sending)
+  nanoClient._send('krai_to_raw', { amount: params.amount_sending.toString() }).then(resVal => {
+    console.log('on krai')
+    console.log(resVal)
+    nanoClient._send('account_info', { account: params.user_account, count: 1 }).then(info => {
+      console.log('account info')
+      console.log(info)
+      nanoClient._send('work_generate', { hash: info.frontier }).then(workResult => {
+        console.log(workResult)
+        nanoClient._send('block_create', {
+          type: 'send',
+          key: params.useprk,
+          account: params.user_account,
+          destination: userldb.nano_account.account,
+          balance: info.balance,
+          amount: resVal.amount,
+          previous: info.frontier,
+          work: workResult.work
+        })
+          .then(newBlock => {
+            nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+              console.log(processResult.hash)
+              res.send(processResult)
+            }).catch(e => {
+              console.log(e)
+              res.send(e)
+            })
+          })
+          .catch(e => {
+            console.log(e)
+            res.send(e)
+          })
+      }).catch(e => {
+        console.log(e)
+        res.send(e)
+      })
+    }).catch(e => {
+      console.log(e)
+      res.send(e)
+    })
+  }).catch(e => {
+    console.log(e)
+    res.send(e)
+  })
+}
 // app.get('/nanoWalletCreatedAndDataStitchSavedChecked', (req, res, next) => {
 //   let user = db.get('users').find({ node_id: req.query.node_id }).value()
 //   if (req.query.node_id) {
