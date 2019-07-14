@@ -152,9 +152,18 @@ app.get('/account/openAccount', (req, res, next) => {
   // console.log(req.query.user_account)
   nanoClient._send('accounts_pending', { accounts: [data.user_account] }).then(resVal => {
     console.log(resVal)
-    res.send(resVal)
+    if (resVal.blocks[data.user_account][0]) {
+      nanoClient._send('work_generate', { hash: data.user_pubk }).then(workResult => {
+
+      }).catch(e => {
+
+      })
+    } else {
+      res.send('Before opening it you must send any amount of nano to this account first, The amount can be anything (Like $0.000002 worth of nano). It will be yours.')
+    }
   }).catch(e => {
     console.log(e)
+    res.send(e)
   })
 })
 

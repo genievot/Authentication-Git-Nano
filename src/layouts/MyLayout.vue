@@ -301,7 +301,8 @@ export default {
     openNanoAccount () {
       let dataGen = {
         user_account: this.userWallet.account,
-        user_prk: this.userWallet.private
+        user_prk: this.userWallet.private,
+        user_pubk: this.userWallet.public
       }
       // console.log(dataGen)
       this.$axios.get(this.$backEnd + '/account/openAccount', { // AXIOS CALL
