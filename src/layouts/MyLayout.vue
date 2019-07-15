@@ -59,7 +59,30 @@
         </q-bar>
 
         <q-card-section>
-          <div class="text-h6 row justify-center">Nano Wallet</div>
+          <div class="text-h6 row justify-center">Nano Wallet
+            <q-btn
+              class="bg-green text-white q-ml-sm"
+              size="small"
+              dense
+              icon="account_balance_wallet"
+              round
+              @click="showUserWalletDialog = true"
+              aria-label="Show Account"
+            >
+              <q-popup-proxy v-if="this.accountBalances">
+                <q-banner>
+                  <div class="row justify-center">
+                  <span class='text-h6 text-weight-light text-grey-9'>Balance:</span>
+                  <span class='text-h6 text-weight-light text-green'>{{this.accountBalances.mrai_balance}}</span>
+                  </div>
+                  <div class="row justify-center">
+                  <span class='text-h6 text-weight-light text-grey-9'>Pending:</span>
+                  <span class='text-h6 text-weight-light text-red-4'>{{this.accountBalances.mrai_pending}}</span>
+                  </div>
+                </q-banner>
+              </q-popup-proxy>
+            </q-btn>
+            </div>
         </q-card-section>
 
         <q-card-section align="center">
@@ -69,6 +92,9 @@
           <q-icon name="file_copy" />
         </template>
         </q-input>
+        <div class="row justify-center q-ma-sm">
+         <q-btn class="text-green bg-white" @click="gotoExplorer()" round icon="launch" />
+        </div>
         </q-card-section>
                 <q-card-section align="center">
           <span class="text-red">Public Key (Please store it yourself safely)</span>
@@ -96,12 +122,8 @@
         </q-card-section>
 
       <q-card-section v-if="!isAccountOpened" align="center">
-        <q-btn color="grey-9" @click="openNanoAccount()" label="Open Nano Account">
-          <q-icon
-            name="person"
-            class="cursor-pointer text-white"
-          />
-          </q-btn>
+        <q-btn :loading="loadingOnOpenAcc" color="grey-9 text-white" @click="openNanoAccount()" icon="person" label="Open Nano Account">
+        </q-btn>
         </q-card-section>
         <q-card-section v-if="!isAccountOpened" align="center">
           <span>Opening this Nano Account will let you send or receive nanos from here (it's free), If the account is not opened then you will see this above button.</span>
@@ -229,7 +251,9 @@ export default {
       isPwd: true,
       allUserNames: [],
       selectedUser: null,
-      isAccountOpened: false
+      isAccountOpened: false,
+      accountBalances: null,
+      loadingOnOpenAcc: false
     }
   },
   methods: {
@@ -278,10 +302,18 @@ export default {
         }
       }).then((response) => {
         console.log(response)
+        this.$q.notify({
+          color: 'green',
+          message: response.data
+        })
         // this.showNanoSendDialog = false
         // Resend confirmation email if already singed up but not confirmed
       }).catch((err) => {
         console.log(err)
+        this.$q.notify({
+          color: 'warning',
+          message: err
+        })
       })
       // console.log(process.env.NINJA_API_KEY)
     },
@@ -299,6 +331,7 @@ export default {
       })
     },
     openNanoAccount () {
+      this.loadingOnOpenAcc = true
       let dataGen = {
         user_account: this.userWallet.account,
         user_prk: this.userWallet.private,
@@ -311,11 +344,33 @@ export default {
         }
       }).then((response) => {
         console.log(response)
-        // this.showNanoSendDialog = false
+        this.loadingOnOpenAcc = false
+        if (!response.data.error) {
+          this.$q.notify({
+            color: 'green',
+            message: response.data
+          })
+        } else {
+          this.$q.notify({
+            color: 'warning',
+            message: response.data.error
+          })
+        }
+        // this.isAccountOpened = true
         // Resend confirmation email if already singed up but not confirmed
       }).catch((err) => {
         console.log(err)
+        this.loadingOnOpenAcc = false
+        this.$q.notify({
+          color: 'warning',
+          message: err
+        })
       })
+    },
+    gotoExplorer () {
+      let url = 'https://nanocrawler.cc/explorer/account/' + this.userWallet.account
+      let win = window.open(url, '_blank')
+      win.focus()
     }
   },
   mounted () {
@@ -355,6 +410,20 @@ export default {
       } else {
         this.isAccountOpened = true
       }
+    }).catch((err) => {
+      console.log(err)
+      this.$q.notify({
+        color: 'warning',
+        message: err
+      })
+    })
+    this.$axios.get(this.$backEnd + '/account/balance', { // AXIOS CALL
+      params: {
+        user_account: this.userWallet.account
+      }
+    }).then((response) => {
+      this.accountBalances = response.data
+      console.log(this.accountBalances)
     }).catch((err) => {
       console.log(err)
       this.$q.notify({

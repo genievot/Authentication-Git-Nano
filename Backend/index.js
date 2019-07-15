@@ -147,6 +147,23 @@ app.get('/account/isOpened', (req, res, next) => {
   })
 })
 
+app.get('/account/balance', (req, res, next) => {
+  // let data = JSON.parse(req.query.users_data)
+  // console.log(req.query.user_account)
+  nanoClient._send('account_balance', { account: req.query.user_account }).then(resVal => {
+    console.log(resVal)
+    let raw = 1000000000000000000000000000000
+    let amountConversion = {
+      mrai_balance: resVal.balance / raw,
+      mrai_pending: resVal.pending / raw
+    }
+    res.send(amountConversion)
+  }).catch(e => {
+    console.log(e)
+    res.send(e)
+  })
+})
+
 app.get('/account/openAccount', (req, res, next) => {
   let data = JSON.parse(req.query.users_data)
   // console.log(req.query.user_account)

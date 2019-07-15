@@ -61,7 +61,9 @@ module.exports = function (ctx) {
         'QInput',
         'QBar',
         'QSpace',
-        'QTooltip'
+        'QTooltip',
+        'QPopupProxy',
+        'QBanner'
       ],
 
       directives: [
