@@ -154,27 +154,23 @@ app.get('/account/openAccount', (req, res, next) => {
     console.log(resVal)
     if (resVal.blocks[data.user_account][0]) {
       nanoClient._send('work_generate', { hash: data.user_pubk }).then(workResult => {
-        console.log(workResult)
         nanoClient._send('block_create', {
           type: 'open',
           previous: data.user_pubk,
-          key: data.user_prk,
-          account: data.user_accountdata.user_prk,
+          key: data.user_account,
+          account: data.user_prk,
           source: resVal.blocks[data.user_account][0],
           work: workResult.work,
           representative:
             'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
-        }).then(newBlock => {
-          console.log('Block Generated')
-          console.log(newBlock)
-          nanoClient._send('process', { block: newBlock.block }).then(processResult => {
-            console.log('Process Generated')
-            console.log(processResult)
-            res.send(processResult + ' &' + 'DONE')
-          }).catch(e => {
-            console.log(e)
-            res.send(e)
-          })
+        })
+      }).then(newBlock => {
+        nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+          console.log(processResult)
+          res.send(processResult + ' &' + 'DONE')
+        }).catch(e => {
+          console.log(e)
+          res.send(e)
         })
       }).catch(e => {
         console.log(e)
