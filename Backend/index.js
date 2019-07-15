@@ -154,12 +154,30 @@ app.get('/account/openAccount', (req, res, next) => {
     console.log(resVal)
     if (resVal.blocks[data.user_account][0]) {
       nanoClient._send('work_generate', { hash: data.user_pubk }).then(workResult => {
-
+        nanoClient._send('block_create', {
+          type: 'open',
+          previous: data.user_pubk,
+          key: data.user_account,
+          account: data.user_prk,
+          source: resVal.blocks[data.user_account][0],
+          work: workResult.work,
+          representative:
+            'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
+        })
+      }).then(newBlock => {
+        nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+          console.log(processResult)
+          res.send(processResult + ' &' + 'DONE')
+        }).catch(e => {
+          console.log(e)
+          res.send(e)
+        })
       }).catch(e => {
-
+        console.log(e)
+        res.send(e)
       })
     } else {
-      res.send('Before opening it you must send any amount of nano to this account first, The amount can be anything (Like $0.000002 worth of nano). It will be yours.')
+      res.send('Before opening it you must send any amount of nano to this account first. The amount can be anything (Like $0.000002 worth of nano). It will be yours.')
     }
   }).catch(e => {
     console.log(e)
