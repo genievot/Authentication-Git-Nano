@@ -157,8 +157,8 @@ app.get('/account/openAccount', (req, res, next) => {
         nanoClient._send('block_create', {
           type: 'open',
           previous: data.user_pubk,
-          key: data.user_account,
-          account: data.user_prk,
+          key: data.user_prk,
+          account: data.user_account,
           source: resVal.blocks[data.user_account][0],
           work: workResult.work,
           representative:
