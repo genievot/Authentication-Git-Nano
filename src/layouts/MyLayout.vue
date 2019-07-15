@@ -72,11 +72,12 @@
               <q-popup-proxy v-if="this.accountBalances">
                 <q-banner>
                   <div class="row justify-center">
-                  <span class='text-h6 text-weight-light text-grey-9'>Balance:</span>
+                  <span class='text-h6 text-weight-light text-grey-9'>Balance:&nbsp;</span>
                   <span class='text-h6 text-weight-light text-green'>{{this.accountBalances.mrai_balance}}</span>
                   </div>
+                  <q-separator/>
                   <div class="row justify-center">
-                  <span class='text-h6 text-weight-light text-grey-9'>Pending:</span>
+                  <span class='text-h6 text-weight-light text-grey-9'>Pending:&nbsp;</span>
                   <span class='text-h6 text-weight-light text-red-4'>{{this.accountBalances.mrai_pending}}</span>
                   </div>
                 </q-banner>
@@ -172,6 +173,16 @@
           <div class="text-h6 row justify-center">Send Nano</div>
         </q-card-section>
         <q-card-section>
+        <div v-if="accountBalances" class="row justify-center">
+          <span class='text-h6 text-weight-light text-grey-9'>Balance:&nbsp;</span>
+          <span class='text-h6 text-weight-light text-green'>{{this.accountBalances.mrai_balance}}</span>
+        </div>
+        <div v-if="accountBalances" class="row justify-center">
+          <span class='text-h6 text-weight-light text-grey-9'>Pending:&nbsp;</span>
+          <span class='text-h6 text-weight-light text-red-4'>{{this.accountBalances.mrai_pending}}</span>
+        </div>
+        </q-card-section>
+        <q-card-section>
           <div class="q-pa-md" style="max-width: 80vw">
 
             <q-form
@@ -251,7 +262,7 @@ export default {
       isPwd: true,
       allUserNames: [],
       selectedUser: null,
-      isAccountOpened: false,
+      isAccountOpened: true,
       accountBalances: null,
       loadingOnOpenAcc: false
     }
