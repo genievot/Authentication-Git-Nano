@@ -262,7 +262,7 @@ export default {
       isPwd: true,
       allUserNames: [],
       selectedUser: null,
-      isAccountOpened: true,
+      isAccountOpened: false,
       accountBalances: null,
       loadingOnOpenAcc: false
     }
