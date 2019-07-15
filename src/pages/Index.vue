@@ -1,5 +1,7 @@
 <template>
   <q-page class="flex flex-center">
+    <div class="row justify-center">
+    </div>
   </q-page>
 </template>
 

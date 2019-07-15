@@ -62,6 +62,7 @@
           <div class="text-h6 row justify-center">Nano Wallet
             <q-btn
               class="bg-green text-white q-ml-sm"
+              :loading="!gotAccountBalance"
               size="small"
               dense
               icon="account_balance_wallet"
@@ -193,6 +194,7 @@
               <div class="q-pa-md">
                 <div class="q-gutter-md row justify-center">
                   <q-select
+                    @input="changedUser()"
                     filled
                     v-model="selectedUser"
                     use-input
@@ -211,7 +213,7 @@
                     <template v-slot:no-option>
                       <q-item>
                         <q-item-section class="text-grey">
-                          No results
+                          {{ showUserSearchResults }}
                         </q-item-section>
                       </q-item>
                     </template>
@@ -254,7 +256,7 @@ export default {
       notLogged: true,
       showHideOauthDialog: false,
       showUserWalletDialog: false,
-      showNanoSendDialog: false,
+      showNanoSendDialog: true,
       userWallet: '0',
       gitUserName: '',
       amountToSend: 0,
@@ -264,7 +266,9 @@ export default {
       selectedUser: null,
       isAccountOpened: false,
       accountBalances: null,
-      loadingOnOpenAcc: false
+      loadingOnOpenAcc: false,
+      gotAccountBalance: false,
+      showUserSearchResults: 'No Results'
     }
   },
   methods: {
@@ -336,9 +340,29 @@ export default {
         abort()
         return
       }
+      console.log(val)
       update(() => {
         let userName = val.toLowerCase()
         this.filterUsers = this.allUserNames.filter(v => v.toLowerCase().indexOf(userName) > -1)
+      })
+      this.showUserSearchResults = 'Please wait...'
+      this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
+        this.$db.collection('publicUserInfo').find({ userName: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
+          console.log(docs)
+          this.allUserNames = []
+          for (let index = 0; index < docs.length; index++) {
+            this.allUserNames.push(docs[index].userName)
+          }
+          if (!this.allUserNames) {
+            this.showUserSearchResults = 'No Results'
+          }
+          // this.allUsers = docs
+          console.log('[MongoDB Stitch] Connected to Stitch')
+          // window.location = this.$frontEnd
+        }).catch(err => {
+          this.$q.loading.hide()
+          console.error(err)
+        })
       })
     },
     openNanoAccount () {
@@ -361,6 +385,7 @@ export default {
             color: 'green',
             message: response.data
           })
+          this.isAccountOpened = true
         } else {
           this.$q.notify({
             color: 'warning',
@@ -382,24 +407,27 @@ export default {
       let url = 'https://nanocrawler.cc/explorer/account/' + this.userWallet.account
       let win = window.open(url, '_blank')
       win.focus()
+    },
+    changedUser () {
+      console.log(this.selectedUser)
     }
   },
   mounted () {
     console.log(this.$i18n.locale)
-    this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
-      this.$db.collection('publicUserInfo').find({}).asArray().then((docs) => {
-        console.log(docs)
-        for (let index = 0; index < docs.length; index++) {
-          this.allUserNames.push(docs[index].userName)
-        }
-        // this.allUsers = docs
-        console.log('[MongoDB Stitch] Connected to Stitch')
-        // window.location = this.$frontEnd
-      }).catch(err => {
-        this.$q.loading.hide()
-        console.error(err)
-      })
-    })
+    // this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
+    //   this.$db.collection('publicUserInfo').find({}).asArray().then((docs) => {
+    //     console.log(docs)
+    //     for (let index = 0; index < docs.length; index++) {
+    //       this.allUserNames.push(docs[index].userName)
+    //     }
+    //     // this.allUsers = docs
+    //     console.log('[MongoDB Stitch] Connected to Stitch')
+    //     // window.location = this.$frontEnd
+    //   }).catch(err => {
+    //     this.$q.loading.hide()
+    //     console.error(err)
+    //   })
+    // })
     if (this.$q.localStorage.getItem('userSecDetails')) {
       this.notLogged = false
       let userSecData = this.$q.localStorage.getItem('userSecDetails')
@@ -434,6 +462,7 @@ export default {
       }
     }).then((response) => {
       this.accountBalances = response.data
+      this.gotAccountBalance = true
       console.log(this.accountBalances)
     }).catch((err) => {
       console.log(err)
@@ -441,6 +470,7 @@ export default {
         color: 'warning',
         message: err
       })
+      this.gotAccountBalance = true
     })
     console.log(this.$q.localStorage.getItem('userSecDetails'))
     // console.log(this.$q.localStorage.getItem('userLogged'))
