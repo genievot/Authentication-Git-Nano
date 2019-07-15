@@ -151,9 +151,11 @@ app.get('/account/openAccount', (req, res, next) => {
   let data = JSON.parse(req.query.users_data)
   // console.log(req.query.user_account)
   nanoClient._send('accounts_pending', { accounts: [data.user_account] }).then(resVal => {
-    console.log(resVal)
+    console.log(resVal.blocks[data.user_account][0])
     if (resVal.blocks[data.user_account][0]) {
       nanoClient._send('work_generate', { hash: data.user_pubk }).then(workResult => {
+        console.log(workResult)
+        console.log(data)
         nanoClient._send('block_create', {
           type: 'open',
           previous: data.user_pubk,
@@ -163,11 +165,15 @@ app.get('/account/openAccount', (req, res, next) => {
           work: workResult.work,
           representative:
             'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
-        })
-      }).then(newBlock => {
-        nanoClient._send('process', { block: newBlock.block }).then(processResult => {
-          console.log(processResult)
-          res.send(processResult + ' &' + 'DONE')
+        }).then(newBlock => {
+          console.log(newBlock)
+          nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+            console.log(processResult)
+            res.send(processResult + ' &' + 'DONE')
+          }).catch(e => {
+            console.log(e)
+            res.send(e)
+          })
         }).catch(e => {
           console.log(e)
           res.send(e)
