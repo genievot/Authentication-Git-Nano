@@ -125,7 +125,7 @@ app.get('/setupUserConfirmaion', (req, res, next) => {
     // console.log(resAcc)
     db.get('users')
       .find({ node_id: req.query.node_id })
-      .assign({ confirmed_email: true, email_used: req.query.emailUsed, nano_account: resAcc })
+      .assign({ nano_account: resAcc, confirmed_email: true, email_used: req.query.emailUsed })
       .write()
     let userData = db.get('users').find({ node_id: req.query.node_id }).value()
     let data = {

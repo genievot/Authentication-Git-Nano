@@ -68,7 +68,7 @@ export default {
         }
       }).then((response) => {
         console.log(response.data)
-        this.$q.localStorage.set('userLogged', response.data)
+        this.$q.localStorage.set('userLogged', response.data.nodeId)
         for (var i = 0; i < response.data.emails.length; i++) {
           if (response.data.emails[i].visibility === 'private' || response.data.emails[i].visibility === 'public') {
             this.selectEmail.push(response.data.emails[i].email)
@@ -94,6 +94,7 @@ export default {
             this.loginUser = true
             if (response.data.confirmed_email === false) {
               this.resendConf = true
+              this.loginUser = false
             }
             this.emailSelected = this.selectEmail[0]
             this.$q.localStorage.set('selectedEmail', this.emailSelected)
@@ -186,9 +187,10 @@ export default {
         this.$q.loading.show()
         let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
         this.$q.localStorage.set('authCredentials', credential)
+        // console.log(credential)
         this.$stitchClient.auth.loginWithCredential(credential).then((authedUser) => {
-          this.$q.loading.hide()
           this.$q.localStorage.set('userAllocatedId', authedUser.id)
+          console.log('Signed')
           // this.$axios.get(this.$backEnd + '/nanoWalletCreatedAndDataStitchSavedChecked', { // AXIOS CALL
           //   params: {
           //     node_id: this.$q.localStorage.getItem('userLogged').nodeId
@@ -201,18 +203,28 @@ export default {
                 node_id: this.$q.localStorage.getItem('userLogged').nodeId
               }
             }).then((response) => {
-              this.$db.collection('userInfo').updateOne({ nodeId: response.data.nodeId }, response.data).then((result) => {
+              // console.log(response.data)
+              let userId = {
+                'user_auth_id': authedUser.id
+              }
+              let dataStringify = { '$set': { ...response.data, ...userId } }
+              console.log(dataStringify)
+              this.$db.collection('userInfo').updateOne({ 'nodeId': response.data.nodeId }, dataStringify).then((result) => {
                 const { matchedCount, modifiedCount } = result
+                console.log(result)
                 if (matchedCount && modifiedCount) {
                   this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
                     console.log(docs)
                     this.$q.localStorage.set('userSecDetails', docs)
+                    this.$q.loading.hide()
                     // console.log('[MongoDB Stitch] Connected to Stitch')
                     window.location = this.$frontEnd
                   }).catch(err => {
                     this.$q.loading.hide()
                     console.error(err)
                   })
+                } else {
+                  this.$q.loading.hide()
                 }
                 // console.log('Wallet Not in server anymore...')
               }).catch(err => {
@@ -267,6 +279,9 @@ export default {
           message: err.message,
           icon: 'warning'
         })
+        if (this.err.errCodeName === 'UserAlreadyConfirmed') {
+          this.loginUser = true
+        }
         this.$q.loading.hide()
         console.log(err)
       })
