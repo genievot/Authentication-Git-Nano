@@ -41,7 +41,21 @@ export default {
             let dataToInsert = { ...response.data, ...moreData }
             let publicDataToInsert = { account: response.data.account, userName: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
             try {
-              this.$db.collection('userInfo').insertOne(dataToInsert)
+              this.$db.collection('userInfo').insertOne(dataToInsert, (err, res) => {
+                if (err) {
+                  console.log(err)
+                } else {
+                  this.$axios.get(this.$backEnd + '/remove/sensData', { // AXIOS CALL
+                    params: {
+                      node_id: this.$q.localStorage.getItem('userLogged').nodeId
+                    }
+                  }).then((res) => {
+                    console.log('Wallet Not in server anymore...')
+                  }).catch(err => {
+                    console.log(err)
+                  })
+                }
+              })
               this.$db.collection('publicUserInfo').insertOne(publicDataToInsert)
             } catch (e) {
               console.log(e)

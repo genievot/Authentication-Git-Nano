@@ -75,11 +75,13 @@
                   <div class="row justify-center">
                   <span class='text-h6 text-weight-light text-grey-9'>Balance:&nbsp;</span>
                   <span class='text-h6 text-weight-light text-green'>{{this.accountBalances.mrai_balance}}</span>
+                  <span class='text-h6 text-weight-light text-grey-8'>&nbsp;NANO</span>
                   </div>
                   <q-separator/>
                   <div class="row justify-center">
                   <span class='text-h6 text-weight-light text-grey-9'>Pending:&nbsp;</span>
                   <span class='text-h6 text-weight-light text-red-4'>{{this.accountBalances.mrai_pending}}</span>
+                  <span class='text-h6 text-weight-light text-grey-8'>&nbsp;NANO</span>
                   </div>
                 </q-banner>
               </q-popup-proxy>
@@ -177,10 +179,12 @@
         <div v-if="accountBalances" class="row justify-center">
           <span class='text-h6 text-weight-light text-grey-9'>Balance:&nbsp;</span>
           <span class='text-h6 text-weight-light text-green'>{{this.accountBalances.mrai_balance}}</span>
+          <span class='text-h6 text-weight-light text-grey-8'>&nbsp;NANO</span>
         </div>
         <div v-if="accountBalances" class="row justify-center">
           <span class='text-h6 text-weight-light text-grey-9'>Pending:&nbsp;</span>
           <span class='text-h6 text-weight-light text-red-4'>{{this.accountBalances.mrai_pending}}</span>
+          <span class='text-h6 text-weight-light text-grey-8'>&nbsp;NANO</span>
         </div>
         </q-card-section>
         <q-card-section>
@@ -226,6 +230,7 @@
               <q-input
                 filled
                 type="number"
+                step="0.0001"
                 v-model.number="amountToSend"
                 label="Amount to send in NANO*"
                 lazy-rules
@@ -259,7 +264,7 @@ export default {
       notLogged: true,
       showHideOauthDialog: false,
       showUserWalletDialog: false,
-      showNanoSendDialog: true,
+      showNanoSendDialog: false,
       userWallet: '0',
       gitUserName: '',
       amountToSend: 0,
@@ -312,30 +317,58 @@ export default {
       let dataGen = {
         selected_user: this.selectedUser,
         sender_userName: this.userWallet.user_name,
+        sender_avatar_pic: this.userWallet.avatar_url,
         user_account: this.userWallet.account,
         user_prk: this.userWallet.private,
         amount_sending: this.amountToSend
       }
       // console.log(dataGen)
-      this.$axios.get(this.$backEnd + '/block/sendNano', { // AXIOS CALL
-        params: {
-          users_data: dataGen
-        }
-      }).then((response) => {
-        console.log(response)
+      if (this.selectedUser === this.userWallet.user_name) {
         this.$q.notify({
-          color: 'green',
-          message: response.data
+          color: 'orange',
+          message: 'Please do not send to your own account'
         })
-        // this.showNanoSendDialog = false
-        // Resend confirmation email if already singed up but not confirmed
-      }).catch((err) => {
-        console.log(err)
-        this.$q.notify({
-          color: 'warning',
-          message: err
+      } else {
+        this.$axios.get(this.$backEnd + '/block/sendNano', { // AXIOS CALL
+          params: {
+            users_data: dataGen
+          }
+        }).then((response) => {
+          console.log(response)
+          if (response.data.process_result) {
+            this.$q.notify({
+              color: 'green',
+              message: response.data.status
+            })
+            this.$stitchClient.auth.loginWithCredential(this.$q.localStorage.getItem('authCredentials')).then((authedUser) => {
+              let moreData = {
+                user_auth_id: authedUser.id
+              }
+              let dataToInsert = { ...response.data, ...moreData }
+              try {
+                this.$db.collection('globalTxs').insertOne(dataToInsert)
+              } catch (e) {
+                console.log(e)
+              }
+            }).catch(err => {
+              console.error(err)
+            })
+          } else {
+            this.$q.notify({
+              color: 'warning',
+              message: response.data.error
+            })
+          }
+          // this.showNanoSendDialog = false
+          // Resend confirmation email if already singed up but not confirmed
+        }).catch((err) => {
+          console.log(err)
+          this.$q.notify({
+            color: 'warning',
+            message: err
+          })
         })
-      })
+      }
       // console.log(process.env.NINJA_API_KEY)
     },
     onReset () {
@@ -364,7 +397,6 @@ export default {
             this.showUserSearchResults = 'No Results'
           }
           // this.allUsers = docs
-          console.log('[MongoDB Stitch] Connected to Stitch')
           // window.location = this.$frontEnd
         }).catch(err => {
           this.$q.loading.hide()
@@ -434,19 +466,32 @@ export default {
     }
   },
   mounted () {
-    console.log(this.$i18n.locale)
-    // this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
-    //   this.$db.collection('publicUserInfo').find({}).asArray().then((docs) => {
+    // this.$stitchClient.auth.loginWithCredential(this.$q.localStorage.getItem('authCredentials')).then((authedUser) => {
+    //   this.$q.loading.hide()
+    //   console.log(authedUser.id)
+    //   this.$q.localStorage.set('userAllocatedId', authedUser.id)
+    //   // this.$axios.get(this.$backEnd + '/nanoWalletCreatedAndDataStitchSavedChecked', { // AXIOS CALL
+    //   //   params: {
+    //   //     node_id: this.$q.localStorage.getItem('userLogged').nodeId
+    //   //   }
+    //   // }).then((r) => {
+    //   //   if () {}
+    //   this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
     //     console.log(docs)
-    //     for (let index = 0; index < docs.length; index++) {
-    //       this.allUserNames.push(docs[index].userName)
-    //     }
-    //     // this.allUsers = docs
-    //     console.log('[MongoDB Stitch] Connected to Stitch')
+    //     this.$q.localStorage.set('userSecDetails', docs)
+    //     // console.log('[MongoDB Stitch] Connected to Stitch')
     //     // window.location = this.$frontEnd
     //   }).catch(err => {
     //     this.$q.loading.hide()
     //     console.error(err)
+    //   })
+    // }).catch((err) => {
+    //   this.$q.loading.hide()
+    //   console.log(err)
+    //   this.$q.notify({
+    //     color: 'red',
+    //     message: err.message,
+    //     icon: 'warning'
     //   })
     // })
     if (this.$q.localStorage.getItem('userSecDetails')) {
@@ -454,8 +499,10 @@ export default {
       let userSecData = this.$q.localStorage.getItem('userSecDetails')
       if (Array.isArray(userSecData)) {
         this.userWallet = userSecData[0]
+        this.$router.push(this.userWallet.user_name)
       } else {
         this.userWallet = userSecData
+        this.$router.push(this.userWallet.user_name)
       }
     } else {
       this.notLogged = true
@@ -483,7 +530,14 @@ export default {
       }
     }).then((response) => {
       this.accountBalances = response.data
-      this.gotAccountBalance = true
+      if (response.data) {
+        this.gotAccountBalance = true
+      } else {
+        this.$q.notify({
+          color: 'warning',
+          message: 'Please restart browser, There is problem in getting your account balance.'
+        })
+      }
       console.log(this.accountBalances)
     }).catch((err) => {
       console.log(err)
@@ -493,7 +547,7 @@ export default {
       })
       this.gotAccountBalance = true
     })
-    console.log(this.$q.localStorage.getItem('userSecDetails'))
+    // console.log(this.$q.localStorage.getItem('userSecDetails'))
     // console.log(this.$q.localStorage.getItem('userLogged'))
   }
 }

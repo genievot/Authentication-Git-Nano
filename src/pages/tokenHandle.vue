@@ -198,7 +198,7 @@ export default {
           this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
             console.log(docs)
             this.$q.localStorage.set('userSecDetails', docs)
-            console.log('[MongoDB Stitch] Connected to Stitch')
+            // console.log('[MongoDB Stitch] Connected to Stitch')
             window.location = this.$frontEnd
           }).catch(err => {
             this.$q.loading.hide()

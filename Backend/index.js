@@ -9,10 +9,15 @@ const dotenv = require('dotenv')
 const adapter = new FileSync('db.json')
 const NanoClient = require('nano-node-rpc')
 dotenv.config()
+const ipfilter = require('express-ipfilter').IpFilter
 const nanoClient = new NanoClient({ apiKey: process.env.NINJA_API_KEY })
 const db = low(adapter)
+
+const ips = ['::1']
+// Create the server
+app.use(ipfilter(ips, { mode: 'allow' }))
 // Set some defaults (required if your JSON file is empty)
-db.defaults({ signedUsers: [], users: [], count: 0 })
+db.defaults({ signedUsers: [], users: [], tsxes: [], count: 0 })
   .write()
 app.use(cors())
 // console.log(process.argv);
@@ -129,6 +134,13 @@ app.get('/setupUserConfirmaion', (req, res, next) => {
   })
   // When signing user also assign confirmed_email to true
 })
+// Remove data once saved
+app.get('/remove/sensData', (req, res, next) => {
+  db.get('users')
+    .find({ node_id: req.query.node_id })
+    .assign({ access_token: '', nano_account: [] })
+    .write()
+})
 
 app.get('/isUserConfirmed', (req, res, next) => {
   let user = db.get('users').find({ node_id: req.query.node_id }).value()
@@ -137,6 +149,8 @@ app.get('/isUserConfirmed', (req, res, next) => {
 })
 
 app.get('/account/isOpened', (req, res, next) => {
+  var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress
+  console.log(ip)
   // let data = JSON.parse(req.query.users_data)
   // console.log(req.query.user_account)
   nanoClient._send('account_info', { account: req.query.user_account }).then(resVal => {
@@ -219,8 +233,10 @@ app.get('/block/sendNano', (req, res, next) => {
 })
 async function sendNano (params, res, userldb) {
   console.log(params.amount_sending)
-  nanoClient._send('krai_to_raw', { amount: params.amount_sending.toString() }).then(resVal => {
-    console.log('on krai')
+  let amountSending = params.amount_sending * 1000000
+  console.log(amountSending)
+  nanoClient._send('mrai_to_raw', { amount: parseInt(amountSending).toString() }).then(resVal => {
+    console.log('on mrai')
     console.log(resVal)
     nanoClient._send('account_info', { account: params.user_account, count: 1 }).then(info => {
       console.log('account info')
@@ -233,14 +249,27 @@ async function sendNano (params, res, userldb) {
           account: params.user_account,
           destination: userldb.nano_account.account,
           balance: info.balance,
-          amount: resVal.amount,
+          amount: resVal.amount / 1000000,
           previous: info.frontier,
           work: workResult.work
         })
           .then(newBlock => {
             nanoClient._send('process', { block: newBlock.block }).then(processResult => {
               console.log(processResult.hash)
-              res.send(processResult)
+              let currTime = new Date()
+              let dataToSend = {
+                process_result: processResult,
+                sender: params.sender_userName,
+                receiver: params.selected_user,
+                status: 'Sent Successfully',
+                sender_pic: params.sender_avatar_pic,
+                amount_sent: params.amount_sending.toString(),
+                current_Time: currTime
+              }
+              db.get('tsxes')
+                .push(dataToSend)
+                .write()
+              res.send(dataToSend)
             }).catch(e => {
               console.log(e)
               res.send(e)

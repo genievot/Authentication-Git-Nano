@@ -63,7 +63,11 @@ module.exports = function (ctx) {
         'QSpace',
         'QTooltip',
         'QPopupProxy',
-        'QBanner'
+        'QBanner',
+        'QInnerLoading',
+        'QCircularProgress',
+        'QInfiniteScroll',
+        'QSpinnerDots'
       ],
 
       directives: [
