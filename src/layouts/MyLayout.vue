@@ -423,7 +423,7 @@ export default {
           if (response.data.status === 'SEND_NANO') {
             this.isAccountOpened = false
             this.$q.notify({
-              color: 'green',
+              color: 'grey-8',
               message: response.data.message
             })
           } else {
