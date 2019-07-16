@@ -226,7 +226,7 @@ app.get('/account/openAccount', (req, res, next) => {
         res.send(e)
       })
     } else {
-      res.send('Before opening it you must send any amount of nano to this account first. The amount can be anything (Like $0.000002 worth of nano). It will be yours.')
+      res.send({ status: 'SEND_NANO', message: 'Before opening it you must send any amount of nano to this account first. The amount can be anything (Like $0.000002 worth of nano). It will be yours.' })
     }
   }).catch(e => {
     console.log(e)

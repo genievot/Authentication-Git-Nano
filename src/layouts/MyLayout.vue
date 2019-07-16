@@ -420,11 +420,18 @@ export default {
         console.log(response)
         this.loadingOnOpenAcc = false
         if (!response.data.error) {
+        if (response.data.status === 'SEND_NANO') {
+          this.isAccountOpened = false
+          this.$q.notify({
+            color: 'green',
+            message: response.data.message
+          })
+        } else {
           this.$q.notify({
             color: 'green',
             message: response.data
           })
-          this.isAccountOpened = true
+        }
         } else {
           this.$q.notify({
             color: 'warning',
