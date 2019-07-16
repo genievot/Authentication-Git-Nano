@@ -107,6 +107,18 @@ app.get('/setUserRegistered', (req, res, next) => {
     .assign({ registered: true })
     .write()
 })
+app.get('/account/getLatestDetails', (req, res, next) => {
+  let userData = db.get('users').find({ node_id: req.query.node_id }).value()
+  let data = {
+    access_token: userData.access_token,
+    nodeId: userData.node_id,
+    user_name: userData.result.login,
+    avatar_url: userData.result.avatar_url,
+    repos_url: userData.result.repos_url,
+    gists_url: userData.result.gists_url
+  }
+  res.send(data)
+})
 
 app.get('/setupUserConfirmaion', (req, res, next) => {
   nanoClient._send('key_create').then(resAcc => {

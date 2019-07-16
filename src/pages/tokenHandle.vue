@@ -113,7 +113,7 @@ export default {
         this.$q.loading.hide()
       })
     },
-    onSubmit () {
+    async onSubmit () {
       if (this.loginUser === false) {
         // create new account
         this.$q.loading.show({ message: 'Please wait, while sending you confirmation email.' })
@@ -195,15 +195,44 @@ export default {
           //   }
           // }).then((r) => {
           //   if () {}
-          this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
-            console.log(docs)
-            this.$q.localStorage.set('userSecDetails', docs)
-            // console.log('[MongoDB Stitch] Connected to Stitch')
-            window.location = this.$frontEnd
-          }).catch(err => {
-            this.$q.loading.hide()
-            console.error(err)
-          })
+          if (authedUser.id) {
+            this.$axios.get(this.$backEnd + '/account/getLatestDetails', {
+              params: {
+                node_id: this.$q.localStorage.getItem('userLogged').nodeId
+              }
+            }).then((response) => {
+              this.$db.collection('userInfo').updateOne({ nodeId: response.data.nodeId }, response.data).then((result) => {
+                const { matchedCount, modifiedCount } = result
+                if (matchedCount && modifiedCount) {
+                  this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
+                    console.log(docs)
+                    this.$q.localStorage.set('userSecDetails', docs)
+                    // console.log('[MongoDB Stitch] Connected to Stitch')
+                    window.location = this.$frontEnd
+                  }).catch(err => {
+                    this.$q.loading.hide()
+                    console.error(err)
+                  })
+                }
+                // console.log('Wallet Not in server anymore...')
+              }).catch(err => {
+                console.log(err)
+              })
+            }).catch(e => {
+              console.log(e)
+              this.$q.notify({
+                color: 'red',
+                message: e.message,
+                icon: 'warning'
+              })
+            })
+          } else {
+            this.$q.notify({
+              color: 'red',
+              message: authedUser.error,
+              icon: 'warning'
+            })
+          }
           // }).catch((e) => {})
           // this.db.collection('globalTxs').updateOne({ user_auth_id: authedUser.id })
           // this.db.collection('nanoWallets').updateOne({ user_auth_id: authedUser.id })
