@@ -185,7 +185,6 @@
         </q-card-section>
         <q-card-section>
           <div class="q-pa-md" style="max-width: 80vw">
-
             <q-form
               @submit="onSubmit"
               @reset="onReset"
@@ -193,8 +192,11 @@
             >
               <div class="q-pa-md">
                 <div class="q-gutter-md row justify-center">
+                  <q-avatar v-if="userExists" square>
+                    <img @click="gotoGitAccount()" :src="avatarUrl">
+                  </q-avatar>
                   <q-select
-                    @input="changedUser()"
+                    @input="selectedAUser()"
                     filled
                     v-model="selectedUser"
                     use-input
@@ -220,6 +222,7 @@
                   </q-select>
                 </div>
               </div>
+              <div class="justify-center "></div>
               <q-input
                 filled
                 type="number"
@@ -268,7 +271,10 @@ export default {
       accountBalances: null,
       loadingOnOpenAcc: false,
       gotAccountBalance: false,
-      showUserSearchResults: 'No Results'
+      showUserSearchResults: 'No Results',
+      userExists: false,
+      allUsers: [],
+      avatarUrl: null
     }
   },
   methods: {
@@ -349,6 +355,7 @@ export default {
       this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
         this.$db.collection('publicUserInfo').find({ userName: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
           console.log(docs)
+          this.allUsers = docs
           this.allUserNames = []
           for (let index = 0; index < docs.length; index++) {
             this.allUserNames.push(docs[index].userName)
@@ -408,8 +415,22 @@ export default {
       let win = window.open(url, '_blank')
       win.focus()
     },
-    changedUser () {
+    gotoGitAccount () {
+      let url = 'https://github.com/' + this.selectedUser
+      let win = window.open(url, '_blank')
+      win.focus()
+    },
+    selectedAUser () {
       console.log(this.selectedUser)
+      if (this.allUserNames.includes(this.selectedUser)) {
+        let indexOfUser = this.allUserNames.indexOf(this.selectedUser)
+        this.avatarUrl = this.allUsers[indexOfUser].avatar_url
+        this.userExists = true
+        // from same index get the profile url from array of objects allUsers
+      } else {
+        this.avatarUrl = null
+        this.userExists = false
+      }
     }
   },
   mounted () {
