@@ -29,6 +29,7 @@
   </q-input>
     <div class="row justify-center" align="center">
       <q-btn v-if="!loginUser && !resetPass && !resendConf" :disable="disableSignup" label="Sign up" type="submit" color="primary"/>
+      <q-btn v-if="goToHomePageButtonVisible" label="Goto Home Page" :to="this.$frontEnd" color="primary"/>
       <q-btn v-if="loginUser && !resendConf" label="Login" color="green" type="submit" outline class="q-ml-sm" />
       <q-btn v-if="loginUser && !resendConf" @click="resetPass = true; loginUser = false" label="Recover Password" color="green" flat class="q-ml-sm" />
       <q-btn v-if="resetPass && !loginUser" label="Reset" @click="recoverPassword()" color="green" class="q-ml-sm" />
@@ -56,7 +57,8 @@ export default {
       resetPass: false,
       disableSignup: false,
       resendConf: false,
-      emailPassClient: null
+      emailPassClient: null,
+      goToHomePageButtonVisible: false
     }
   },
   methods: {
@@ -83,21 +85,23 @@ export default {
           })
           this.signUser = false
           this.timer = setTimeout(() => {
-            window.location = this.$frontEnd
+            // window.location = this.$frontEnd
             this.timer = void 0
           }, 3000)
         } else {
           // console.log(response)
           this.emailSelected = this.selectEmail[0]
-          this.$q.localStorage.set('selectedEmail', this.emailSelected)
+          // this.$q.localStorage.set('selectedEmail', this.emailSelected)
           if (response.data.status === 'OK_ACCESS_TOKEN_AND_SAVED_SIGNED') {
             this.loginUser = true
-            if (response.data.confirmed_email === false) {
-              this.resendConf = true
+            if (response.data.registered === false) {
+              // this.resendConf = true
               this.loginUser = false
+              this.resetPass = false
+              this.resendConf = false
             }
             this.emailSelected = this.selectEmail[0]
-            this.$q.localStorage.set('selectedEmail', this.emailSelected)
+            // this.$q.localStorage.set('selectedEmail', this.emailSelected)
           }
           this.$q.loading.hide()
           this.signUser = true
@@ -114,148 +118,218 @@ export default {
         this.$q.loading.hide()
       })
     },
+    setUserRegistered () {
+      this.$axios.get(this.$backEnd + '/setUserRegistered', { // AXIOS CALL
+        params: {
+          state: this.$route.query.state
+        }
+      }).then((response) => {
+        console.log(response)
+        console.log('Successfully sent account confirmation email!')
+        this.$q.loading.hide()
+      // Resend confirmation email if already singed up but not confirmed
+      }).catch((err) => {
+        console.log(err)
+        this.$q.loading.hide()
+      })
+    },
     async onSubmit () {
       if (this.loginUser === false) {
         // create new account
         this.$q.loading.show({ message: 'Please wait, while sending you confirmation email.' })
         this.emailPassClient.registerWithEmail(this.emailSelected, this.password).then(() => {
-          let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
-          this.$q.localStorage.set('authCredentials', credential)
-          this.$q.localStorage.set('selectedEmail', this.emailSelected)
+          // let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
+          // this.$q.sessionStorage.set('authCredentials', credential)
+          // this.$q.sessionStorage.set('selectedEmail', this.emailSelected)
           this.$q.notify({
             color: 'green',
             message: 'Successfully sent account confirmation email! You can close this window now.',
             timeout: 25000,
             icon: 'done'
           })
-          // Set User to registered
-          this.$axios.get(this.$backEnd + '/setUserRegistered', { // AXIOS CALL
-            params: {
-              node_id: this.$q.localStorage.getItem('userLogged').nodeId
-            }
-          }).then((response) => {
-            console.log(response)
-            // Resend confirmation email if already singed up but not confirmed
-          }).catch((err) => {
-            console.log(err)
-          })
-          console.log('Successfully sent account confirmation email!')
           this.$q.loading.hide()
+          this.setUserRegistered()
           this.disableSignup = true
         }).catch(err => {
           this.disableSignup = true
           console.log('Error registering new user:', err)
-          this.$q.notify({
-            color: 'red',
-            message: err.message,
-            icon: 'warning'
-          })
+          if (!this.resendConf) {
+            this.$q.notify({
+              color: 'red',
+              message: err.message,
+              icon: 'warning'
+            })
+          }
           this.$q.loading.hide()
           if (err.message === 'name already in use') {
-            this.$axios.get(this.$backEnd + '/isUserConfirmed', { // AXIOS CALL
-              params: {
-                node_id: this.$q.localStorage.getItem('userLogged').nodeId
-              }
-            }).then((response) => {
-              console.log(response)
-              // Resend confirmation email if already singed up but not confirmed
-              if (response.data === false) {
-                this._resendConfirmationEmail()
-                this.disableSignup = true
-              } else {
-                this.$q.notify({
-                  color: 'orange',
-                  message: 'You can login at ' + this.$frontEnd + ' You can close this tab now.',
-                  timeout: 25000,
-                  icon: 'user'
-                })
-              }
-              this.$q.loading.hide()
-            }).catch((err) => {
-              console.log(err)
-              this.disableSignup = true
-              this.$q.notify({
-                color: 'red',
-                message: err.message,
-                icon: 'warning'
-              })
-              this.$q.loading.hide()
-            })
+            this.setUserRegistered()
+            this._resendConfirmationEmail()
+            // this.$axios.get(this.$backEnd + '/isUserConfirmed', { // AXIOS CALL
+            //   params: {
+            //     state: this.$route.query.state
+            //   }
+            // }).then((response) => {
+            //   console.log(response)
+            //   // Resend confirmation email if already singed up but not confirmed
+            //   if (response.data === true) {
+            //     this._resendConfirmationEmail()
+            //     this.disableSignup = true
+            //   }
+            //   // else {
+            //   //   if (!this.resendConf) {
+            //   //     this.$q.notify({
+            //   //       color: 'orange',
+            //   //       message: 'You can login at ' + this.$frontEnd + ' You can close this tab now.',
+            //   //       timeout: 25000,
+            //   //       icon: 'user'
+            //   //     })
+            //   //   }
+            //   // }
+            //   this.$q.loading.hide()
+            // }).catch((err) => {
+            //   console.log(err)
+            //   this.disableSignup = true
+            //   this.$q.notify({
+            //     color: 'red',
+            //     message: err.message,
+            //     icon: 'warning'
+            //   })
+            //   this.$q.loading.hide()
+            // })
           }
         })
       } else if (this.loginUser === true && this.resetPass === false) {
         this.$q.loading.show()
         let credential = new this.$userPasswordCredential(this.emailSelected, this.password)
-        this.$q.localStorage.set('authCredentials', credential)
+        this.$q.sessionStorage.set('authCredentials', credential)
         // console.log(credential)
         this.$stitchClient.auth.loginWithCredential(credential).then((authedUser) => {
-          this.$q.localStorage.set('userAllocatedId', authedUser.id)
-          console.log('Signed')
-          // this.$axios.get(this.$backEnd + '/nanoWalletCreatedAndDataStitchSavedChecked', { // AXIOS CALL
-          //   params: {
-          //     node_id: this.$q.localStorage.getItem('userLogged').nodeId
-          //   }
-          // }).then((r) => {
-          //   if () {}
-          if (authedUser.id) {
-            this.$axios.get(this.$backEnd + '/account/getLatestDetails', {
-              params: {
-                node_id: this.$q.localStorage.getItem('userLogged').nodeId
-              }
-            }).then((response) => {
-              // console.log(response.data)
-              let userId = {
-                'user_auth_id': authedUser.id
-              }
-              let dataStringify = { '$set': { ...response.data, ...userId } }
-              console.log(dataStringify)
-              this.$db.collection('userInfo').updateOne({ 'nodeId': response.data.nodeId }, dataStringify).then((result) => {
-                const { matchedCount, modifiedCount } = result
-                console.log(result)
-                if (matchedCount && modifiedCount) {
-                  this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
-                    console.log(docs)
-                    this.$q.localStorage.set('userSecDetails', docs)
-                    this.$q.loading.hide()
-                    // console.log('[MongoDB Stitch] Connected to Stitch')
-                    window.location = this.$frontEnd
-                  }).catch(err => {
-                    this.$q.loading.hide()
-                    console.error(err)
-                  })
-                } else {
-                  this.$q.loading.hide()
+          this.$q.sessionStorage.set('userAllocatedId', authedUser.id)
+          this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
+            // console.log(docs)
+            // Checking if user have already saved data, If so then get node if from it.
+            if (docs.length > 0) {
+              this.$q.sessionStorage.set('userSecDetails', docs)
+              // get latest details...
+              this.$axios.get(this.$backEnd + '/setupUserConfirmaion', {
+                params: {
+                  state: this.$route.query.state,
+                  email_used: this.emailSelected
                 }
-                // console.log('Wallet Not in server anymore...')
-              }).catch(err => {
-                console.log(err)
+              }).then((response) => {
+                // console.log(response.data)
+                let userId = {
+                  user_auth_id: authedUser.id
+                }
+                let dataStringify = response.data
+                // console.log(dataStringify)
+                this.$db.collection('userInfo').updateOne(userId, { '$set': dataStringify }).then((result) => {
+                  const { matchedCount, modifiedCount } = result
+                  console.log(result)
+                  if (matchedCount && modifiedCount) {
+                    this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
+                      // console.log(docs)
+                      this.$q.sessionStorage.set('userSecDetails', docs)
+                      this.$axios.get(this.$backEnd + '/remove/sensData', { // AXIOS CALL
+                        params: {
+                          state: this.$route.query.state
+                        }
+                      }).then((res) => {
+                        console.log('Wallet Not in server anymore...')
+                        this.$q.loading.hide()
+                        this.goToHomePageButtonVisible = true
+                      }).catch(err => {
+                        console.log(err)
+                        window.location = this.$frontEnd
+                      })
+                      // console.log('[MongoDB Stitch] Connected to Stitch')
+                    }).catch(err => {
+                      this.$q.loading.hide()
+                      console.error(err)
+                    })
+                  } else {
+                    this.$q.loading.hide()
+                  }
+                  // console.log('Wallet Not in server anymore...')
+                }).catch(err => {
+                  console.log(err)
+                })
+              }).catch(e => {
+                console.log(e)
+                this.$q.notify({
+                  color: 'red',
+                  message: e.message,
+                  icon: 'warning'
+                })
               })
-            }).catch(e => {
-              console.log(e)
-              this.$q.notify({
-                color: 'red',
-                message: e.message,
-                icon: 'warning'
-              })
-            })
-          } else {
-            this.$q.notify({
-              color: 'red',
-              message: authedUser.error,
-              icon: 'warning'
-            })
-          }
+            } else { // If data is not there then do the insertion
+              // Insertion
+              try {
+                this.$axios.get(this.$backEnd + '/setupUserConfirmaion', {
+                  params: {
+                    state: this.$route.query.state,
+                    email_used: this.emailSelected,
+                    create_wallet: true
+                  }
+                }).then((response) => {
+                  // console.log(response.data)
+                  let userId = {
+                    user_auth_id: authedUser.id
+                  }
+                  let dataStringify = { ...response.data, ...userId }
+                  this.$db.collection('userInfo').insertOne(dataStringify, (err, res) => {
+                    if (err) {
+                      console.log(err)
+                    } else {
+                      this.$axios.get(this.$backEnd + '/remove/sensData', { // AXIOS CALL
+                        params: {
+                          state: this.$route.query.state
+                        }
+                      }).then((res) => {
+                        console.log('Wallet Not in server anymore...')
+                        let publicDataToInsert = { account: response.data.account, userName: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
+                        this.$db.collection('publicUserInfo').insertOne(publicDataToInsert, (err, res) => {
+                          if (err) {
+                            console.log(err)
+                          } else {
+                            this.$q.loading.hide()
+                            window.location = this.$frontEnd
+                          }
+                        })
+                      }).catch(err => {
+                        console.log(err)
+                      })
+                    }
+                  })
+                })
+              } catch (e) {
+                console.log(e)
+              }
+            }
+            // console.log('[MongoDB Stitch] Connected to Stitch')
+            // window.location = this.$frontEnd
+          }).catch(err => {
+            this.$q.loading.hide()
+            console.error(err)
+          })
+          console.log('Signed')
           // }).catch((e) => {})
           // this.db.collection('globalTxs').updateOne({ user_auth_id: authedUser.id })
           // this.db.collection('nanoWallets').updateOne({ user_auth_id: authedUser.id })
         }).catch((err) => {
           this.$q.loading.hide()
           console.log(err)
-          this.$q.notify({
-            color: 'red',
-            message: err.message,
-            icon: 'warning'
-          })
+          if (err.message === 'confirmation required') {
+            this.resendConf = true
+            this.resetPass = false
+            this.loginUser = false
+          } else {
+            this.$q.notify({
+              color: 'red',
+              message: err.message,
+              icon: 'warning'
+            })
+          }
         })
       }
     },
@@ -274,6 +348,16 @@ export default {
         })
         this.$q.loading.hide()
       }).catch((err) => {
+        console.log(err)
+        this.$q.loading.hide()
+        // this.$axios.get(this.$backEnd + '/setupUserConfirmaion', { // AXIOS CALL
+        //   params: {
+        //     node_id: this.$q.localStorage.getItem('userLogged'),
+        //     emailUsed: this.$q.localStorage.getItem('selectedEmail')
+        //   }
+        // }).then((response) => {
+
+        // })
         this.$q.notify({
           color: 'red',
           message: err.message,

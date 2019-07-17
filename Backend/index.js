@@ -72,12 +72,12 @@ app.get('/getAccessToken', function (req, res, next) {
               .assign({ result: meResult.data, access_token: accessToken, state: req.query.state, emails: mailR.data, last_login: lastLogin.toString() })
               .write()
             console.log(oldData.confirmed_email)
-            res.send({ status: 'OK_ACCESS_TOKEN_AND_SAVED_SIGNED', nodeId: meResult.data.node_id, login: meResult.data.login, emails: mailR.data, confirmed_email: oldData.confirmed_email })
+            res.send({ status: 'OK_ACCESS_TOKEN_AND_SAVED_SIGNED', nodeId: meResult.data.node_id, login: meResult.data.login, emails: mailR.data, registered: oldData.registered })
           } else {
             let accountCreated = new Date()
             let lastLogin = new Date()
             db.get('users')
-              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: false, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString(), dataSaved: null })
+              .push({ registered: false, result: meResult.data, node_id: meResult.data.node_id, access_token: accessToken, state: req.query.state, emails: mailR.data, confirmed_email: true, email_used: null, nano_account: null, account_created: accountCreated.toString(), last_login: lastLogin.toString(), dataSaved: null })
               .write()
             // { accessToken: accessToken, state: req.query.state, nodeId: meResult.node_id, userName: meResult.login, email: meResult.email}
             db.update('count', n => n + 1)
@@ -103,7 +103,7 @@ app.get('/getAccessToken', function (req, res, next) {
 
 app.get('/setUserRegistered', (req, res, next) => {
   db.get('users')
-    .find({ node_id: req.query.node_id })
+    .find({ state: req.query.state })
     .assign({ registered: true })
     .write()
 })
@@ -121,42 +121,54 @@ app.get('/account/getLatestDetails', (req, res, next) => {
 })
 
 app.get('/setupUserConfirmaion', (req, res, next) => {
-  nanoClient._send('key_create').then(resAcc => {
-    // console.log(resAcc)
-    db.get('users')
-      .find({ node_id: req.query.node_id })
-      .assign({ nano_account: resAcc, confirmed_email: true, email_used: req.query.emailUsed })
-      .write()
-    let userData = db.get('users').find({ node_id: req.query.node_id }).value()
-    let data = {
-      access_token: userData.access_token,
-      nodeId: userData.node_id,
-      email_Used: userData.email_used,
-      user_name: userData.result.login,
-      avatar_url: userData.result.avatar_url,
-      repos_url: userData.result.repos_url,
-      gists_url: userData.result.gists_url,
-      account_creation_date: userData.account_created
-    }
-    let objects = { ...data, ...resAcc }
+  db.get('users')
+    .find({ state: req.query.state })
+    .assign({ confirmed_email: true, email_used: req.query.emailUsed })
+    .write()
+  let userData = db.get('users').find({ state: req.query.state }).value()
+  let data = {
+    access_token: userData.access_token,
+    nodeId: userData.node_id,
+    email_Used: userData.email_used,
+    user_name: userData.result.login,
+    avatar_url: userData.result.avatar_url,
+    repos_url: userData.result.repos_url,
+    gists_url: userData.result.gists_url,
+    account_creation_date: userData.account_created
+  }
+  let objects = data
+  if (req.query.create_wallet) {
+    nanoClient._send('key_create').then(resAcc => {
+      // console.log(resAcc)
+      // db.get('users')
+      //   .find({ node_id: req.query.node_id })
+      //   .assign({ nano_account: resAcc })
+      //   .write()
+      res.send({ ...resAcc, ...objects })
+    }).catch(e => {
+      console.log(e)
+      res.send('Nano Account Creation Problem.')
+    })
+  } else {
     res.send(objects)
-  }).catch(e => {
-    console.log(e)
-    res.send('Nano Account Creation Problem.')
-  })
+  }
   // When signing user also assign confirmed_email to true
+})
+
+app.get('/account/createWallet', (req, res, next) => {
 })
 // Remove data once saved
 app.get('/remove/sensData', (req, res, next) => {
   db.get('users')
-    .find({ node_id: req.query.node_id })
-    .assign({ access_token: '', nano_account: [] })
+    .find({ state: req.query.state })
+    .assign({ access_token: '' })
     .write()
+  res.send('Done')
 })
 
 app.get('/isUserConfirmed', (req, res, next) => {
-  let user = db.get('users').find({ node_id: req.query.node_id }).value()
-  res.send(user.confirmed_email)
+  let user = db.get('users').find({ state: req.query.state }).value()
+  res.send(user.registered)
   // When signing user also assign confirmed_email to true
 })
 

@@ -340,7 +340,7 @@ export default {
               color: 'green',
               message: response.data.status
             })
-            this.$stitchClient.auth.loginWithCredential(this.$q.localStorage.getItem('authCredentials')).then((authedUser) => {
+            this.$stitchClient.auth.loginWithCredential(this.$q.sessionStorage.getItem('authCredentials')).then((authedUser) => {
               let moreData = {
                 user_auth_id: authedUser.id
               }
@@ -473,19 +473,19 @@ export default {
     }
   },
   mounted () {
-    // this.$stitchClient.auth.loginWithCredential(this.$q.localStorage.getItem('authCredentials')).then((authedUser) => {
+    // this.$stitchClient.auth.loginWithCredential(this.$q.sessionStorage.getItem('authCredentials')).then((authedUser) => {
     //   this.$q.loading.hide()
     //   console.log(authedUser.id)
-    //   this.$q.localStorage.set('userAllocatedId', authedUser.id)
+    //   this.$q.sessionStorage.set('userAllocatedId', authedUser.id)
     //   // this.$axios.get(this.$backEnd + '/nanoWalletCreatedAndDataStitchSavedChecked', { // AXIOS CALL
     //   //   params: {
-    //   //     node_id: this.$q.localStorage.getItem('userLogged').nodeId
+    //   //     node_id: this.$q.localStorage.getItem('userLogged')
     //   //   }
     //   // }).then((r) => {
     //   //   if () {}
     //   this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
     //     console.log(docs)
-    //     this.$q.localStorage.set('userSecDetails', docs)
+    //     this.$q.sessionStorage.set('userSecDetails', docs)
     //     // console.log('[MongoDB Stitch] Connected to Stitch')
     //     // window.location = this.$frontEnd
     //   }).catch(err => {
@@ -501,9 +501,9 @@ export default {
     //     icon: 'warning'
     //   })
     // })
-    if (this.$q.localStorage.getItem('userSecDetails')) {
+    if (this.$q.sessionStorage.getItem('userSecDetails').length > 0) {
       this.notLogged = false
-      let userSecData = this.$q.localStorage.getItem('userSecDetails')
+      let userSecData = this.$q.sessionStorage.getItem('userSecDetails')
       if (Array.isArray(userSecData)) {
         this.userWallet = userSecData[0]
         this.$router.push(this.userWallet.user_name)
@@ -554,7 +554,7 @@ export default {
       })
       this.gotAccountBalance = true
     })
-    // console.log(this.$q.localStorage.getItem('userSecDetails'))
+    // console.log(this.$q.sessionStorage.getItem('userSecDetails'))
     // console.log(this.$q.localStorage.getItem('userLogged'))
   }
 }

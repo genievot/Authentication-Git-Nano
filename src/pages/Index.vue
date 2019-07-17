@@ -81,9 +81,9 @@ export default {
           console.error(err)
         })
     })
-    // console.log(this.$q.localStorage.getAll())
+    // console.log(this.$q.sessionStorage.getAll())
     // console.log(this.$q.localStorage.getItem('userLogged'))
-    // console.log(this.$q.localStorage.getItem('userSecDetails'))
+    // console.log(this.$q.sessionStorage.getItem('userSecDetails'))
   },
   methods: {
     onLoad (index, done) {

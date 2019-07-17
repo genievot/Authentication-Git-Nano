@@ -2,7 +2,7 @@
   <q-page padding>
     <!-- Create nano wallet here and save it for user -->
     <div class="row justify-center" align ='center'>
-     <q-btn @click="goToWebsite()" label="Go Back to website" color="primary"/>
+     <q-btn @click="goToWebsite()" label="Go Back to website" color="primary" class="q-ma-sm"/>
     </div>
   </q-page>
 </template>
@@ -10,18 +10,28 @@
 <script>
 export default {
   name: 'confirmEmail',
+  data () {
+    return {
+    }
+  },
   mounted () {
     // this.db = this.$stitchClient.getServiceClient(this.$remoteMongoClient.factory, 'mongodb-atlas').db('nanoGit')
-    this.$q.loading.show({
-      message: 'Please wait while confirming you address'
-    })
     this.confirmEmail()
   },
   methods: {
     goToWebsite () {
       window.location = this.$frontEnd
     },
+    onSubmit () {
+      console.log('Submit')
+    },
+    onReset () {
+      // Reset
+    },
     confirmEmail () {
+      this.$q.loading.show({
+        message: 'Please wait while confirming you address'
+      })
       let emailPassClient = this.$stitchClient.auth.getProviderClient(this.$userPasswordAuthProviderClient.factory)
       emailPassClient.confirmUser(this.$route.query.token, this.$route.query.tokenId).then(() => {
         this.$axios.get(this.$backEnd + '/setupUserConfirmaion', { // AXIOS CALL
@@ -88,12 +98,12 @@ export default {
           timeout: 25000,
           icon: 'warning'
         })
-        this.$q.notify({
-          color: 'red',
-          message: 'Please try again with signup with this email, To get new confirmation url got to ' + this.$frontEnd,
-          timeout: 25000,
-          icon: 'warning'
-        })
+        // this.$q.notify({
+        //   color: 'red',
+        //   message: 'Please try again with signup with this email, To get new confirmation url, Go to ' + this.$frontEnd,
+        //   timeout: 25000,
+        //   icon: 'warning'
+        // })
       })
     }
   }
