@@ -29,7 +29,7 @@
   </q-input>
     <div class="row justify-center" align="center">
       <q-btn v-if="!loginUser && !resetPass && !resendConf" :disable="disableSignup" label="Sign up" type="submit" color="primary"/>
-      <q-btn v-if="goToHomePageButtonVisible" label="Goto Home Page" :to="this.$frontEnd" color="primary"/>
+      <q-btn v-if="goToHomePageButtonVisible" label="Goto Home Page" to="/" color="primary"/>
       <q-btn v-if="loginUser && !resendConf" label="Login" color="green" type="submit" outline class="q-ml-sm" />
       <q-btn v-if="loginUser && !resendConf" @click="resetPass = true; loginUser = false" label="Recover Password" color="green" flat class="q-ml-sm" />
       <q-btn v-if="resetPass && !loginUser" label="Reset" @click="recoverPassword()" color="green" class="q-ml-sm" />
