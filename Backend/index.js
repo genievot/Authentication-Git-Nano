@@ -205,40 +205,35 @@ app.get('/account/balance', (req, res, next) => {
 app.get('/account/openAccount', (req, res, next) => {
   let data = JSON.parse(req.query.users_data)
   // console.log(req.query.user_account)
-  nanoClient._send('accounts_pending', { accounts: [data.user_account] }).then(resVal => {
-    console.log(resVal.blocks[data.user_account][0])
-    if (resVal.blocks[data.user_account][0]) {
-      nanoClient._send('work_generate', { hash: data.user_pubk }).then(workResult => {
-        console.log(workResult)
-        // console.log(data)
-        nanoClient._send('block_create', {
-          type: 'open',
-          previous: data.user_pubk,
-          key: data.user_prk,
-          account: data.user_account,
-          source: resVal.blocks[data.user_account][0],
-          work: workResult.work,
-          representative:
-            'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
-        }).then(newBlock => {
-          // console.log(newBlock.block)
-          nanoClient._send('process', { block: newBlock.block }).then(processResult => {
-            console.log(processResult)
-            res.send(processResult)
-          }).catch(e => {
-            console.log(e)
-            res.send(e)
-          })
+  nanoClient._send('accounts_pending', { accounts: [data.user_account], source: true }).then(resVal => {
+    console.log(resVal.blocks)
+    // console.log(Object.keys(resVal.blocks[data.user_account])[0])
+    let block = Object.keys(resVal.blocks[data.user_account])[0]
+    console.log(resVal.blocks[data.user_account][block].amount)
+    if (Object.keys(resVal.blocks[data.user_account]).length > 0) {
+      nanoClient._send('block_create', {
+        type: 'state',
+        key: data.user_prk,
+        previous: 0,
+        account: data.user_account,
+        link: block,
+        balance: resVal.blocks[data.user_account][block].amount,
+        representative: 'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
+      }).then(newBlock => {
+        console.log(newBlock)
+        nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+          console.log(processResult)
+          res.send(processResult)
         }).catch(e => {
           console.log(e)
           res.send(e)
         })
       }).catch(e => {
         console.log(e)
-        res.send(e)
+        res.send(e.error)
       })
     } else {
-      res.send({ status: 'SEND_NANO', message: 'Before opening it you must send any amount of nano to this account first. The amount can be anything (Like $0.000002 worth of nano). It will be yours.' })
+      res.send({ error: 'Problem occured while opening account, Make sure you have any smallest amount of pending balance.' })
     }
   }).catch(e => {
     console.log(e)
@@ -248,14 +243,14 @@ app.get('/account/openAccount', (req, res, next) => {
 
 app.get('/block/sendNano', (req, res, next) => {
   let data = JSON.parse(req.query.users_data)
-  let userLdbData = db.get('users').find({ result: { login: data.selected_user.toLowerCase() } }).value()
-  if (userLdbData) {
-    sendNano(data, res, userLdbData)
+  // let userLdbData = db.get('users').find({ result: { login: data.selected_user.toLowerCase() } }).value()
+  if (req.query.users_data) {
+    sendNano(data, res, req.query.users_data)
   } else {
     res.send('USER_NANO_RECEIVER_NOT_FOUND')
   }
 })
-async function sendNano (params, res, userldb) {
+async function sendNano (params, res, usermdb) {
   console.log(params.amount_sending)
   let amountSending = params.amount_sending * 1000000
   console.log(amountSending)
@@ -268,10 +263,10 @@ async function sendNano (params, res, userldb) {
       nanoClient._send('work_generate', { hash: info.frontier }).then(workResult => {
         console.log(workResult)
         nanoClient._send('block_create', {
-          type: 'send',
+          type: 'state',
           key: params.useprk,
           account: params.user_account,
-          destination: userldb.nano_account.account,
+          link: userldb.nano_account.account,
           balance: info.balance,
           amount: resVal.amount / 1000000,
           previous: info.frontier,

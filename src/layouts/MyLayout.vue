@@ -305,7 +305,7 @@ export default {
         var successful = await document.execCommand('copy')
         // console.log(successful)
         var msg = successful ? 'successful' : 'unsuccessful'
-        alert('Testing code was copied ' + msg)
+        alert('Value was copied ' + msg)
       } catch (err) {
         alert('Oops, unable to copy')
       } finally {
@@ -420,8 +420,8 @@ export default {
         console.log(response)
         this.loadingOnOpenAcc = false
         if (!response.data.error) {
-          if (response.data.status === 'SEND_NANO') {
-            this.isAccountOpened = false
+          if (response.data.hash) {
+            this.isAccountOpened = false // Make the send button visible
             this.$q.notify({
               color: 'grey-8',
               message: response.data.message
