@@ -473,6 +473,18 @@ export default {
     }
   },
   mounted () {
+    if (!this.$q.sessionStorage.getItem('showWarningDialog')) {
+      this.$q.dialog({
+        title: 'Confirm!',
+        message: 'You will close this window when you not using this website, This website store information that is easy to view but once you close the website and all opened tabs and pages of it then all solid information will be removed, \nI will not be responsible for the loss of your data.',
+        persistent: true
+      }).onOk(() => {
+        console.log('>>>> OK')
+        this.$q.sessionStorage.set('showWarningDialog', true)
+      }).onOk(() => {
+        console.log('>>>> second OK catcher')
+      })
+    }
     // this.$stitchClient.auth.loginWithCredential(this.$q.sessionStorage.getItem('authCredentials')).then((authedUser) => {
     //   this.$q.loading.hide()
     //   console.log(authedUser.id)
