@@ -69,7 +69,7 @@ export default {
       this.$db.collection('globalTxs').find({ $or: [{ sender: this.thisUserName },
         { receiver_name: this.thisUserName }] }, { sort: { x: -1 }, limit: 5 }).asArray()
         .then((transactions) => {
-          console.log(transactions)
+          // console.log(transactions)
           if (transactions.length >= 1) {
             this.all_transactions = transactions
             this.visible = false

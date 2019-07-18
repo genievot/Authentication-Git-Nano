@@ -246,7 +246,7 @@
                       hide-selected
                       fill-input
                       input-debounce="0"
-                      :options="allUserNames"
+                      :options="filterUsers"
                       @filter="filterFn"
                       hint="Mininum 1 character to trigger autocomplete"
                       style="width: 250px; padding-bottom: 32px"
@@ -455,7 +455,8 @@ export default {
       console.log('"Hello"')
     },
     filterFn (val, update, abort) {
-      if (val.length < 1) {
+      this.showUserSearchResults = 'Please wait...'
+      if (val.length < 2) {
         abort()
         return
       }
@@ -463,24 +464,23 @@ export default {
       update(() => {
         let userName = val.toLowerCase()
         this.filterUsers = this.allUserNames.filter(v => v.toLowerCase().indexOf(userName) > -1)
-      })
-      this.showUserSearchResults = 'Please wait...'
-      this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
-        this.$db.collection('publicUserInfo').find({ user_name: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
-          // console.log(docs)
-          this.allUsers = docs
-          this.allUserNames = []
-          for (let index = 0; index < docs.length; index++) {
-            this.allUserNames.push(docs[index].user_name)
-          }
-          if (!this.allUserNames) {
-            this.showUserSearchResults = 'No Results'
-          }
-          // this.allUsers = docs
-          // window.location = this.$frontEnd
-        }).catch(err => {
-          this.$q.loading.hide()
-          console.error(err)
+        this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
+          this.$db.collection('publicUserInfo').find({ user_name: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
+            // console.log(docs)
+            this.allUsers = docs
+            this.allUserNames = []
+            for (let index = 0; index < docs.length; index++) {
+              this.allUserNames.push(docs[index].user_name)
+            }
+            if (!this.allUserNames) {
+              this.showUserSearchResults = 'No Results'
+            }
+            // this.allUsers = docs
+            // window.location = this.$frontEnd
+          }).catch(err => {
+            this.$q.loading.hide()
+            console.error(err)
+          })
         })
       })
     },
@@ -625,6 +625,26 @@ export default {
           message: err
         })
       })
+    },
+    getPublicUsersInfo () { // Useless function on mounted...
+      this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
+        this.$db.collection('publicUserInfo').find({}).asArray().then((docs) => {
+          // console.log(docs)
+          this.allUsers = docs
+          this.allUserNames = []
+          for (let index = 0; index < docs.length; index++) {
+            this.allUserNames.push(docs[index].user_name)
+          }
+          if (!this.allUserNames) {
+            this.showUserSearchResults = 'No result for this user name...'
+          }
+          // this.allUsers = docs
+          // window.location = this.$frontEnd
+        }).catch(err => {
+          this.$q.loading.hide()
+          console.error(err)
+        })
+      })
     }
   },
   mounted () {
@@ -692,6 +712,7 @@ export default {
     })
     // console.log(this.$q.sessionStorage.getItem('userSecDetails'))
     // console.log(this.$q.localStorage.getItem('userLogged'))
+    // this.getPublicUsersInfo()
   }
 }
 </script>
