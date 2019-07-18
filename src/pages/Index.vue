@@ -14,10 +14,11 @@
           </q-item-section>
           <q-card-section v-if="transaction.sender == thisUserName">
             <div class="text-h5 text-weight-light text-red">- {{transaction.amount_sent}}</div>
-            <div class="text-subtitle2">to <q-item-label class="text-weight-light" lines='1'>{{transaction.receiver}}</q-item-label></div>
+            <div class="text-subtitle2">to <q-item-label class="text-weight-light" lines='1' v-if="transaction.receiver_name">{{transaction.receiver_name}}</q-item-label></div>
+            <div class="text-subtitle2"><q-item-label class="text-weight-light" lines='1' v-if="transaction.receiver">{{transaction.receiver}}</q-item-label></div>
             <q-btn class="text-red bg-white q-mt-md" @click="gotoExplorer(transaction.process_result.hash)" round icon="launch" />
           </q-card-section>
-          <q-card-section v-if="transaction.receiver == thisUserName">
+          <q-card-section v-if="transaction.receiver_name == thisUserName">
             <div class="text-h5 text-weight-light text-green">+ {{transaction.amount_sent}}</div>
             <div class="text-subtitle2">from <q-item-label class="text-weight-light" lines='1'> {{transaction.sender}} </q-item-label></div>
             <q-btn class="text-green bg-white q-mt-md" @click="gotoExplorer(transaction.process_result.hash)" round icon="launch" />
