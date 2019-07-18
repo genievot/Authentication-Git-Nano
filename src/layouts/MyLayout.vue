@@ -128,10 +128,14 @@
       <q-card-section v-if="!isAccountOpened" align="center">
         <q-btn :loading="loadingOnOpenAcc" color="grey-9 text-white" @click="openNanoAccount()" icon="person" label="Open Nano Account">
         </q-btn>
-        </q-card-section>
-        <q-card-section v-if="!isAccountOpened" align="center">
-          <span>Opening this Nano Account will let you send or receive nanos from here (it's free), If the account is not opened then you will see this above button.</span>
-        </q-card-section>
+      </q-card-section>
+      <q-card-section v-if="!isAccountOpened" align="center">
+        <span>Opening this Nano Account will let you send or receive nanos from here (it's free), If the account is not opened then you will see this above button.</span>
+      </q-card-section>
+      <q-card-section v-if="isAccountOpened && accountBalances.mrai_pending > 0" align="center">
+        <q-btn :loading="loadingOnReceiveAcc" color="grey-9 text-white" @click="receiveNanoForAccount()" icon="person" label="Receive Pending Balance">
+        </q-btn>
+      </q-card-section>
       </q-card>
     </q-dialog>
     <!-- Outh dialog -->
@@ -338,7 +342,8 @@ export default {
       toggleDefaultButton: 'git',
       addressToSend: '',
       selectedAddress: null,
-      alertUserDialogShow: false
+      alertUserDialogShow: false,
+      loadingOnReceiveAcc: false
     }
   },
   methods: {
@@ -574,6 +579,51 @@ export default {
           message: err
         })
         this.gotAccountBalance = true
+      })
+    },
+    receiveNanoForAccount () {
+      this.loadingOnReceiveAcc = true
+      let dataGen = {
+        user_account: this.userWallet.account,
+        user_prk: this.userWallet.private,
+        user_pubk: this.userWallet.public
+      }
+      // console.log(dataGen)
+      this.$axios.get(this.$backEnd + '/block/receiveNano', { // AXIOS CALL
+        params: {
+          users_data: dataGen
+        }
+      }).then((response) => {
+        // console.log(response)
+        this.loadingOnReceiveAcc = false
+        if (!response.data.error) {
+          if (response.data.hash) {
+            this.getBalance()
+            this.$q.notify({
+              color: 'green',
+              message: response.data.hash
+            })
+          } else {
+            this.$q.notify({
+              color: 'green',
+              message: response.data
+            })
+          }
+        } else {
+          this.$q.notify({
+            color: 'warning',
+            message: response.data.error
+          })
+        }
+        // this.isAccountOpened = true
+        // Resend confirmation email if already singed up but not confirmed
+      }).catch((err) => {
+        console.log(err)
+        this.loadingOnOpenAcc = false
+        this.$q.notify({
+          color: 'warning',
+          message: err
+        })
       })
     }
   },

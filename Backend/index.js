@@ -9,17 +9,20 @@ const dotenv = require('dotenv')
 const adapter = new FileSync('db.json')
 const NanoClient = require('nano-node-rpc')
 dotenv.config()
-const ipfilter = require('express-ipfilter').IpFilter
+// const ipfilter = require('express-ipfilter').IpFilter
 const nanoClient = new NanoClient({ apiKey: process.env.NINJA_API_KEY })
 const db = low(adapter)
-
-const ips = ['::1']
+var corsOptions = {
+  origin: 'https://nano-git.firebaseapp.com',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+// const ips = ['151.101.65.195']
 // Create the server
-app.use(ipfilter(ips, { mode: 'allow' }))
+// app.use(ipfilter(ips, { mode: 'allow' }))
 // Set some defaults (required if your JSON file is empty)
 db.defaults({ signedUsers: [], users: [], tsxes: [], count: 0 })
   .write()
-app.use(cors())
+app.use(cors(corsOptions))
 // console.log(process.argv);
 app.get('/getAccessToken', function (req, res, next) {
   console.log('Came here')
@@ -190,7 +193,7 @@ app.get('/account/balance', (req, res, next) => {
   // console.log(req.query.user_account)
   nanoClient._send('account_balance', { account: req.query.user_account }).then(resVal => {
     // console.trace(resVal)
-    let raw = 1000000000000000000000000000000
+    let raw = 1000000000000000000000000000000 // mrai
     let amountConversion = {
       mrai_balance: resVal.balance / raw,
       mrai_pending: resVal.pending / raw
@@ -247,7 +250,7 @@ app.get('/block/sendNano', (req, res, next) => {
   if (req.query.users_data) {
     sendNano(data, res, req.query.users_data)
   } else {
-    res.send('USER_NANO_RECEIVER_NOT_FOUND')
+    res.send('USER_NANO_SENDER_NOT_FOUND')
   }
 })
 async function sendNano (params, res, usermdb) {
@@ -299,6 +302,73 @@ async function sendNano (params, res, usermdb) {
           console.log(e)
           res.send(e)
         })
+    }).catch(e => {
+      console.log(e)
+      res.send(e)
+    })
+  }).catch(e => {
+    console.log(e)
+    res.send(e)
+  })
+}
+
+app.get('/block/receiveNano', (req, res, next) => {
+  // res.send('Currently Working on it Please wait...')
+  // return
+  let data = JSON.parse(req.query.users_data)
+  // let userLdbData = db.get('users').find({ result: { login: data.selected_user.toLowerCase() } }).value()
+  if (req.query.users_data) {
+    receiveNano(data, res, req.query.users_data)
+  } else {
+    res.send('USER_NANO_RECEIVER_NOT_FOUND')
+  }
+})
+
+async function receiveNano (params, res, usermdb) {
+  nanoClient._send('pending', { account: params.user_account, count: 1, source: true }).then(pending => {
+    console.log(pending)
+    let hash = Object.keys(pending.blocks)[0]
+    console.log(hash)
+    console.log(pending.blocks[hash].amount)
+    // res.send('Working on it please wait...')
+    // return
+    nanoClient._send('account_balance', { account: params.user_account }).then(resVal => {
+      console.log(resVal)
+      nanoClient._send('account_info', { account: params.user_account, count: 1 }).then(info => {
+        console.log('account info')
+        console.log(info)
+        let balance = Number(info.balance + pending.blocks[hash].amount)
+        console.log(balance.toLocaleString('fullwide', {useGrouping:false}) )
+        // console.log(params.user_prk)
+        nanoClient._send('block_create', {
+          type: 'state',
+          key: params.user_prk,
+          account: params.user_account,
+          link: hash,
+          balance: balance.toLocaleString('fullwide', {useGrouping:false}),
+          previous: info.frontier,
+          representative: 'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
+        })
+          .then(newBlock => {
+            console.log('New Block')
+            console.log(newBlock)
+            nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+              console.log(processResult)
+              let currTime = new Date()
+              res.send('Your Received Pending Amount...')
+            }).catch(e => {
+              console.log(e)
+              res.send(e)
+            })
+          })
+          .catch(e => {
+            console.log(e)
+            res.send(e)
+          })
+      }).catch(e => {
+        console.log(e)
+        res.send(e)
+      })
     }).catch(e => {
       console.log(e)
       res.send(e)
