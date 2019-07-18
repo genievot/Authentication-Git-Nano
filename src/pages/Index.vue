@@ -6,7 +6,7 @@
     <q-infinite-scroll @load="onLoad" :offset="250" align="center">
       <div v-for="(transaction, index) in all_transactions" :key="index" class="caption">
         <div class="q-pa-md row justify-center q-ma-md">
-          <q-card class="my-card" style="max-width: 90vw">
+          <q-card class="my-card" style="max-width: 90vw; width: 500px">
           <q-item-section avatar align="center">
             <q-avatar square>
               <img :src="transaction.sender_pic">

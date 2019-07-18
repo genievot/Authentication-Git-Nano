@@ -338,14 +338,14 @@ async function receiveNano (params, res, usermdb) {
         console.log('account info')
         console.log(info)
         let balance = Number(info.balance + pending.blocks[hash].amount)
-        console.log(balance.toLocaleString('fullwide', {useGrouping:false}) )
+        console.log(balance.toLocaleString('fullwide', { useGrouping: false }))
         // console.log(params.user_prk)
         nanoClient._send('block_create', {
           type: 'state',
           key: params.user_prk,
           account: params.user_account,
           link: hash,
-          balance: balance.toLocaleString('fullwide', {useGrouping:false}),
+          balance: balance.toLocaleString('fullwide', { useGrouping: false }),
           previous: info.frontier,
           representative: 'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
         })
@@ -354,7 +354,7 @@ async function receiveNano (params, res, usermdb) {
             console.log(newBlock)
             nanoClient._send('process', { block: newBlock.block }).then(processResult => {
               console.log(processResult)
-              let currTime = new Date()
+              // let currTime = new Date()
               res.send('Your Received Pending Amount...')
             }).catch(e => {
               console.log(e)
