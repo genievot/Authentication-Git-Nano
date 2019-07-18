@@ -3,25 +3,24 @@
     <div v-if="no_transactions" class="row justify-center">
       <span class="q-ma-sm text-h5 text-grey-4">No transactions to show</span>
     </div>
-    <q-infinite-scroll @load="onLoad" :offset="250">
+    <q-infinite-scroll @load="onLoad" :offset="250" align="center">
       <div v-for="(transaction, index) in all_transactions" :key="index" class="caption">
-        <div class="q-pa-md row">
-          <q-card class="my-card">
+        <div class="q-pa-md row justify-center q-ma-md">
+          <q-card class="my-card" style="max-width: 90vw">
           <q-item-section avatar align="center">
-            <q-avatar>
+            <q-avatar square>
               <img :src="transaction.sender_pic">
             </q-avatar>
           </q-item-section>
-          <q-card-section v-if="transaction.sender == this.$route.params.userName">
-            <div class="text-subtitle2">to {{transaction.receiver}}</div>
+          <q-card-section v-if="transaction.sender == thisUserName">
+            <div class="text-h5 text-weight-light text-red">- {{transaction.amount_sent}}</div>
+            <div class="text-subtitle2">to <q-item-label class="text-weight-light" lines='1'>{{transaction.receiver}}</q-item-label></div>
+            <q-btn class="text-red bg-white q-mt-md" @click="gotoExplorer(transaction.process_result.hash)" round icon="launch" />
           </q-card-section>
-          <q-card-section v-if="transaction.sender == this.$route.params.userName">
-            <div class="text-h5 text-weight-light text-green">{{transaction.amount_sent}}</div>
-            <div class="text-subtitle2">to {{transaction.receiver}}</div>
-          </q-card-section>
-          <q-card-section v-if="transaction.receiver == this.$route.params.userName">
-            <div class="text-h5 text-weight-light text-red">{{transaction.amount_sent}}</div>
-            <div class="text-subtitle2">from {{transaction.sender}}</div>
+          <q-card-section v-if="transaction.receiver == thisUserName">
+            <div class="text-h5 text-weight-light text-green">+ {{transaction.amount_sent}}</div>
+            <div class="text-subtitle2">from <q-item-label class="text-weight-light" lines='1'> {{transaction.sender}} </q-item-label></div>
+            <q-btn class="text-green bg-white q-mt-md" @click="gotoExplorer(transaction.process_result.hash)" round icon="launch" />
           </q-card-section>
           </q-card>
         </div>
@@ -56,21 +55,22 @@ export default {
       all_transactions: [],
       no_transactions: false,
       visible: true,
-      skipTxs: 0,
+      skipTxs: 10,
       loadMoreData: true,
       sent: false,
-      otherUser: null
+      otherUser: null,
+      thisUserName: null
     }
   },
   mounted () {
+    this.thisUserName = this.$route.params.userName
     this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
-      this.$db.collection('publicUserInfo').find({ $or: [{ sender: this.$route.params.userName },
-        { receiver: this.$route.params.userName }] }, { sort: { x: -1 }, limit: 10 }).asArray()
+      this.$db.collection('globalTxs').find({ $or: [{ sender: this.thisUserName },
+        { receiver: this.thisUserName }] }, { sort: { x: -1 }, limit: 5 }).asArray()
         .then((transactions) => {
-          // console.log(transactions)
+          console.log(transactions)
           if (transactions.length >= 1) {
-            this.all_transactions.push(transactions)
-            this.skipTxs += 10
+            this.all_transactions = transactions
             this.visible = false
             // this.allUsers = docs
           } else {
@@ -88,27 +88,34 @@ export default {
     // console.log(this.$q.sessionStorage.getItem('userSecDetails'))
   },
   methods: {
+    gotoExplorer (hash) {
+      let url = 'https://nanocrawler.cc/explorer/block/' + hash
+      let win = window.open(url, '_blank')
+      win.focus()
+    },
     onLoad (index, done) {
       if (this.loadMoreData === false) {
         return
       }
+      this.userName = this.$route.params.userName
       this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
-        this.$db.collection('publicUserInfo').find({ $or: [{ sender: this.$route.params.userName },
-          { receiver: this.$route.params.userName }] }, { sort: { x: -1 }, limit: 10, skip: this.skipTxs }).asArray()
+        this.$db.collection('globalTxs').find({ $or: [{ sender: this.userName },
+          { receiver: this.userName }] }, { sort: { x: -1 }, limit: 5, skip: this.skipTxs }).asArray()
           .then((transactions) => {
-            done()
             // console.log(transactions)
             if (transactions.length >= 1) {
-              this.all_transactions.push(transactions)
+              for (let index = 0; index < transactions.length; index++) {
+                this.all_transactions.push(transactions[index])
+              }
               this.skipTxs += 10
               this.visible = false
               console.log('"Ok"')
               done()
+              this.loadMoreData = false
               // this.allUsers = docs
             } else {
-              this.no_transactions = true
+              // this.no_transactions = true
               this.visible = false
-              this.loadMoreData = false
               done(true)
             }
           // window.location = this.$frontEnd
