@@ -384,6 +384,7 @@ export default {
       // console.log(process.env.NINJA_API_KEY)
     },
     sendNanoToUser (address, name) {
+      this.$q.loading.show()
       let dataGen = {
         selected_address: address, // Selected address is the address nano_00000 of the user (receiver)
         sender_user_name: this.userWallet.user_name,
@@ -412,6 +413,7 @@ export default {
               color: 'green',
               message: response.data.status
             })
+            this.$q.loading.hide()
             this.getBalance()
             this.$stitchClient.auth.loginWithCredential(this.$q.sessionStorage.getItem('authCredentials')).then((authedUser) => {
               let moreData = {
@@ -440,6 +442,7 @@ export default {
             color: 'warning',
             message: err
           })
+          this.$q.loading.hide()
         })
       }
     },

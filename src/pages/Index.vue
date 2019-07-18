@@ -66,7 +66,7 @@ export default {
     this.thisUserName = this.$route.params.userName
     this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
       this.$db.collection('globalTxs').find({ $or: [{ sender: this.thisUserName },
-        { receiver: this.thisUserName }] }, { sort: { x: -1 }, limit: 5 }).asArray()
+        { receiver_name: this.thisUserName }] }, { sort: { x: -1 }, limit: 5 }).asArray()
         .then((transactions) => {
           console.log(transactions)
           if (transactions.length >= 1) {
@@ -76,6 +76,7 @@ export default {
           } else {
             this.no_transactions = true
             this.visible = false
+            this.loadMoreData = false
           }
         // window.location = this.$frontEnd
         }).catch(err => {
@@ -100,7 +101,7 @@ export default {
       this.userName = this.$route.params.userName
       this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
         this.$db.collection('globalTxs').find({ $or: [{ sender: this.userName },
-          { receiver: this.userName }] }, { sort: { x: -1 }, limit: 5, skip: this.skipTxs }).asArray()
+          { receiver_name: this.userName }] }, { sort: { x: -1 }, limit: 5, skip: this.skipTxs }).asArray()
           .then((transactions) => {
             // console.log(transactions)
             if (transactions.length >= 1) {
@@ -115,6 +116,7 @@ export default {
               // this.allUsers = docs
             } else {
               // this.no_transactions = true
+              this.loadMoreData = false
               this.visible = false
               done(true)
             }

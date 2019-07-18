@@ -3,6 +3,6 @@
 // "async" is optional
 export default async ({ Vue }) => {
   // something to do
-  Vue.prototype.$frontEnd = 'http://localhost:8080'
-  Vue.prototype.$backEnd = 'http://localhost:3000'
+  Vue.prototype.$frontEnd = 'https://nano-git.firebaseapp.com/'
+  Vue.prototype.$backEnd = 'https://youthful-seed.glitch.me'
 }

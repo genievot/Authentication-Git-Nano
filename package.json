@@ -1,8 +1,8 @@
 {
   "name": "nanogittip",
   "version": "0.0.1",
-  "description": "A Quasar Framework app",
-  "productName": "Quasar App",
+  "description": "Github integrated Nano Wallet",
+  "productName": "GitNano Wallet",
   "cordovaId": "org.cordova.quasar.app",
   "author": "Genievot <40867747+genievot@users.noreply.github.com>",
   "private": true,
