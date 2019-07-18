@@ -548,6 +548,7 @@ export default {
       this.alertUserDialogShow = false
     },
     getBalance () {
+      // console.log(this.userWallet.account)
       this.$axios.get(this.$backEnd + '/account/balance', { // AXIOS CALL
         params: {
           user_account: this.userWallet.account
@@ -574,7 +575,6 @@ export default {
     }
   },
   mounted () {
-    this.getBalance()
     if (!this.$q.sessionStorage.getItem('showedWarningDialog')) {
       this.alertUserDialogShow = true
     }
@@ -619,6 +619,7 @@ export default {
     } else {
       this.notLogged = true
     }
+    this.getBalance()
     this.$axios.get(this.$backEnd + '/account/isOpened', { // AXIOS CALL
       params: {
         user_account: this.userWallet.account

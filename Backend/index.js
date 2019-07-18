@@ -189,7 +189,7 @@ app.get('/account/balance', (req, res, next) => {
   // let data = JSON.parse(req.query.users_data)
   // console.log(req.query.user_account)
   nanoClient._send('account_balance', { account: req.query.user_account }).then(resVal => {
-    console.log(resVal)
+    // console.trace(resVal)
     let raw = 1000000000000000000000000000000
     let amountConversion = {
       mrai_balance: resVal.balance / raw,

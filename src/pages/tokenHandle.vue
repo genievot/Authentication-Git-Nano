@@ -283,7 +283,8 @@ export default {
                         })
                       }).catch(err => {
                         console.log(err)
-                        window.location = this.$frontEnd
+                        this.$q.loading.hide()
+                        this.goToHomePageButtonVisible = true
                       })
                       // console.log('[MongoDB Stitch] Connected to Stitch')
                     }).catch(err => {
@@ -329,11 +330,14 @@ export default {
                       }
                     }).then((res) => {
                       console.log('Wallet Not in server anymore...')
+                      this.$q.sessionStorage.set('userSecDetails', dataStringify)
                       let publicDataToInsert = { account: response.data.account, user_name: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
                       this.$q.loading.show({ message: 'Adding public data...' })
                       this.$db.collection('publicUserInfo').insertOne(publicDataToInsert).then(res => {
                         this.$q.loading.hide()
-                        window.location = this.$frontEnd
+                        console.log('Wallet Not in server anymore...')
+                        this.$q.loading.hide()
+                        this.goToHomePageButtonVisible = true
                       })
                     }).catch(err => {
                       console.log(err)
