@@ -12,7 +12,9 @@
               <img :src="transaction.sender_pic">
             </q-avatar>
           </q-item-section>
-
+          <q-card-section v-if="transaction.sender == this.$route.params.userName">
+            <div class="text-subtitle2">to {{transaction.receiver}}</div>
+          </q-card-section>
           <q-card-section v-if="transaction.sender == this.$route.params.userName">
             <div class="text-h5 text-weight-light text-green">{{transaction.amount_sent}}</div>
             <div class="text-subtitle2">to {{transaction.receiver}}</div>

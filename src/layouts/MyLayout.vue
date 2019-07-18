@@ -195,42 +195,77 @@
               class="q-gutter-md"
             >
               <div class="q-pa-md">
-                <div class="q-gutter-md row justify-center">
+                <div class="q-gutter-md justify-center">
+                  <div class="row justify-center">
                   <q-avatar v-if="userExists" square>
                     <img @click="gotoGitAccount()" :src="avatarUrl">
                   </q-avatar>
-                  <q-select
-                    @input="selectedAUser()"
+                  </div>
+                  <div class="row justify-center">
+                    <q-btn-toggle
+                      v-model="toggleDefaultButton"
+                      class="my-custom-toggle"
+                      no-caps
+                      rounded
+                      unelevated
+                      toggle-color="primary"
+                      color="white"
+                      text-color="primary"
+                      :options="[
+                        {label: 'Git User', value: 'git'},
+                        {label: 'Address', value: 'address'}
+                      ]"
+                    />
+                  </div>
+                  <div class="row justify-center">
+                    <q-input
+                    v-if="toggleDefaultButton=='address'"
                     filled
-                    v-model="selectedUser"
-                    use-input
-                    label="Start typing User Name"
-                    hide-selected
-                    fill-input
-                    input-debounce="0"
-                    :options="allUserNames"
-                    @filter="filterFn"
-                    hint="Mininum 1 character to trigger autocomplete"
-                    style="width: 250px; padding-bottom: 32px"
+                    type="text"
+                    placeholder= 'nano_'
+                    v-model="addressToSend"
+                    label="Destination Address, e.g -> nano_0000000....."
+                    lazy-rules
                     :rules="[
-                      val => val !== null && val !== '' || 'Please Select a User'
+                      val => val !== null && val !== '' || 'Please enter nano account address'
                     ]"
-                  >
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section class="text-grey">
-                          {{ showUserSearchResults }}
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
+                  />
+                  </div>
+                  <div class="row justify-center">
+                    <q-select
+                      v-if="toggleDefaultButton=='git'"
+                      @input="selectedAUser()"
+                      filled
+                      v-model="selectedUser"
+                      use-input
+                      label="Start typing User Name"
+                      hide-selected
+                      fill-input
+                      input-debounce="0"
+                      :options="allUserNames"
+                      @filter="filterFn"
+                      hint="Mininum 1 character to trigger autocomplete"
+                      style="width: 250px; padding-bottom: 32px"
+                      :rules="[
+                        val => val !== null && val !== '' || 'Please Select a User'
+                      ]"
+                    >
+                      <template v-slot:no-option>
+                        <q-item>
+                          <q-item-section class="text-grey">
+                            {{ showUserSearchResults }}
+                          </q-item-section>
+                        </q-item>
+                      </template>
+                    </q-select>
+                  </div>
                 </div>
               </div>
               <div class="justify-center "></div>
               <q-input
                 filled
                 type="number"
-                step="0.0001"
+                step="0.000001"
                 v-model.number="amountToSend"
                 label="Amount to send in NANO*"
                 lazy-rules
@@ -244,9 +279,29 @@
                   </q-btn>
               </div>
             </q-form>
-
           </div>
         </q-card-section>
+      </q-card>
+    </q-dialog>
+    <q-dialog v-model="alertUserDialogShow" persistent transition-show="scale" transition-hide="scale">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Confirm!</div>
+        </q-card-section>
+
+        <q-card-section>
+          <span class="text-weight-bold"> You should close all tabs and windows of this website when you are not using it! </span>
+        This website store solid information that is easy to view but once you close the website and all opened tabs and pages of this website then all solid information will be removed,
+        I will not be responsible for the loss of your data.
+        </q-card-section>
+        <q-card-section>
+        Only Those transactions which done using Github Username will show here,
+        For others please visit the an explorer like nanocrawler.cc or nanonode.co,
+        <span class="text-weight-bold"> Thank you! </span>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="OK" color="primary" @click="acceptedDialog()" />
+        </q-card-actions>
       </q-card>
     </q-dialog>
     <q-page-container>
@@ -279,7 +334,11 @@ export default {
       showUserSearchResults: 'No Results',
       userExists: false,
       allUsers: [],
-      avatarUrl: null
+      avatarUrl: null,
+      toggleDefaultButton: 'git',
+      addressToSend: '',
+      selectedAddress: null,
+      alertUserDialogShow: false
     }
   },
   methods: {
@@ -314,13 +373,26 @@ export default {
     },
     onSubmit () {
       console.log('"Hello"')
+      if (this.toggleDefaultButton === 'git') {
+        let indexOfUser = this.allUserNames.indexOf(this.selectedUser)
+        this.selectedAddress = this.allUsers[indexOfUser].account
+        this.sendNanoToUser(this.selectedAddress, this.selectedUser)
+      } else {
+        this.selectedAddress = this.addressToSend.trim()
+        this.sendNanoToUser(this.selectedAddress, '$Nano_Address')
+      }
+      // console.log(process.env.NINJA_API_KEY)
+    },
+    sendNanoToUser (address, name) {
       let dataGen = {
-        selected_user: this.selectedUser,
-        sender_userName: this.userWallet.user_name,
+        selected_address: address, // Selected address is the address nano_00000 of the user (receiver)
+        sender_user_name: this.userWallet.user_name,
         sender_avatar_pic: this.userWallet.avatar_url,
         user_account: this.userWallet.account,
         user_prk: this.userWallet.private,
-        amount_sending: this.amountToSend
+        amount_sending: this.amountToSend,
+        selected_user_name: name,
+        type: 'git'
       }
       // console.log(dataGen)
       if (this.selectedUser === this.userWallet.user_name) {
@@ -369,7 +441,6 @@ export default {
           })
         })
       }
-      // console.log(process.env.NINJA_API_KEY)
     },
     onReset () {
       console.log('"Hello"')
@@ -386,12 +457,12 @@ export default {
       })
       this.showUserSearchResults = 'Please wait...'
       this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
-        this.$db.collection('publicUserInfo').find({ userName: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
+        this.$db.collection('publicUserInfo').find({ user_name: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
           console.log(docs)
           this.allUsers = docs
           this.allUserNames = []
           for (let index = 0; index < docs.length; index++) {
-            this.allUserNames.push(docs[index].userName)
+            this.allUserNames.push(docs[index].user_name)
           }
           if (!this.allUserNames) {
             this.showUserSearchResults = 'No Results'
@@ -470,20 +541,15 @@ export default {
         this.avatarUrl = null
         this.userExists = false
       }
+    },
+    acceptedDialog () {
+      this.$q.sessionStorage.set('showedWarningDialog', true)
+      this.alertUserDialogShow = false
     }
   },
   mounted () {
-    if (!this.$q.sessionStorage.getItem('showWarningDialog')) {
-      this.$q.dialog({
-        title: 'Confirm!',
-        message: 'You will close this window when you not using this website, This website store information that is easy to view but once you close the website and all opened tabs and pages of it then all solid information will be removed, \nI will not be responsible for the loss of your data.',
-        persistent: true
-      }).onOk(() => {
-        console.log('>>>> OK')
-        this.$q.sessionStorage.set('showWarningDialog', true)
-      }).onOk(() => {
-        console.log('>>>> second OK catcher')
-      })
+    if (!this.$q.sessionStorage.getItem('showedWarningDialog')) {
+      this.alertUserDialogShow = true
     }
     // this.$stitchClient.auth.loginWithCredential(this.$q.sessionStorage.getItem('authCredentials')).then((authedUser) => {
     //   this.$q.loading.hide()

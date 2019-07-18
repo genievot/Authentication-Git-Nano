@@ -147,7 +147,7 @@ app.get('/setupUserConfirmaion', (req, res, next) => {
       res.send({ ...resAcc, ...objects })
     }).catch(e => {
       console.log(e)
-      res.send('Nano Account Creation Problem.')
+      res.send(objects)
     })
   } else {
     res.send(objects)
@@ -252,7 +252,7 @@ app.get('/block/sendNano', (req, res, next) => {
 })
 async function sendNano (params, res, usermdb) {
   console.log(params.amount_sending)
-  let amountSending = params.amount_sending * 1000000
+  let amountSending = params.amount_sending * 10000000
   console.log(amountSending)
   nanoClient._send('mrai_to_raw', { amount: parseInt(amountSending).toString() }).then(resVal => {
     console.log('on mrai')
@@ -260,48 +260,42 @@ async function sendNano (params, res, usermdb) {
     nanoClient._send('account_info', { account: params.user_account, count: 1 }).then(info => {
       console.log('account info')
       console.log(info)
-      nanoClient._send('work_generate', { hash: info.frontier }).then(workResult => {
-        console.log(workResult)
-        nanoClient._send('block_create', {
-          type: 'state',
-          key: params.useprk,
-          account: params.user_account,
-          link: userldb.nano_account.account,
-          balance: info.balance,
-          amount: resVal.amount / 1000000,
-          previous: info.frontier,
-          work: workResult.work
-        })
-          .then(newBlock => {
-            nanoClient._send('process', { block: newBlock.block }).then(processResult => {
-              console.log(processResult.hash)
-              let currTime = new Date()
-              let dataToSend = {
-                process_result: processResult,
-                sender: params.sender_userName,
-                receiver: params.selected_user,
-                status: 'Sent Successfully',
-                sender_pic: params.sender_avatar_pic,
-                amount_sent: params.amount_sending.toString(),
-                current_Time: currTime
-              }
-              db.get('tsxes')
-                .push(dataToSend)
-                .write()
-              res.send(dataToSend)
-            }).catch(e => {
-              console.log(e)
-              res.send(e)
-            })
-          })
-          .catch(e => {
+      nanoClient._send('block_create', {
+        type: 'state',
+        key: params.useprk,
+        account: params.user_account,
+        link: params.selected_address,
+        balance: info.balance - (resVal.amount / 10000000),
+        previous: info.frontier,
+        representative: 'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
+      })
+        .then(newBlock => {
+          nanoClient._send('process', { block: newBlock.block }).then(processResult => {
+            console.log(processResult.hash)
+            let currTime = new Date()
+            let dataToSend = {
+              process_result: processResult,
+              sender: params.sender_user_name,
+              receiver: params.selected_address,
+              receiver_name: params.selected_user_name,
+              status: 'Sent Successfully',
+              sender_pic: params.sender_avatar_pic,
+              amount_sent: params.amount_sending.toString(),
+              current_Time: currTime
+            }
+            db.get('tsxes')
+              .push(dataToSend)
+              .write()
+            res.send(dataToSend)
+          }).catch(e => {
             console.log(e)
             res.send(e)
           })
-      }).catch(e => {
-        console.log(e)
-        res.send(e)
-      })
+        })
+        .catch(e => {
+          console.log(e)
+          res.send(e)
+        })
     }).catch(e => {
       console.log(e)
       res.send(e)

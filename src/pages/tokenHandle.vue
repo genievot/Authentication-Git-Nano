@@ -2,7 +2,7 @@
   <q-page padding>
     <div class="flex flex-center">
       <div v-if="loginUser" class="row bg-indigo-5 text-white justify-center" style="width: 90vw" align="center">
-        <span class="text-h5">This github id is already registered, You can Login.</span>
+        <!-- <span class="text-h5">This github id is already registered, You can Login.</span> -->
       </div>
   <div class="q-pa-md" style="max-width: 400px">
   <q-form
@@ -10,9 +10,9 @@
     class="q-gutter-md"
     v-if="signUser"
   >
-    <q-select filled v-model="emailSelected" :options="selectEmail" label="Email" :rules="[
+    <q-select v-if="!goToHomePageButtonVisible" filled v-model="emailSelected" :options="selectEmail" label="Email" :rules="[
             val => val !== null && val !== '' || 'Please select an email']" />
-    <q-input v-if="!resetPass && !resendConf" v-model="password" filled :type="isPwd ? 'password' : 'text'"
+    <q-input v-if="!resetPass && !resendConf && !goToHomePageButtonVisible" v-model="password" filled :type="isPwd ? 'password' : 'text'"
       :hint= "loginUser ? 'Choose your correct email and enter Password to Login' : 'Create new Password'"
       :rules="[
         val => val !== null && val !== '' || 'Please type your Password',
@@ -28,13 +28,13 @@
     </template>
   </q-input>
     <div class="row justify-center" align="center">
-      <q-btn v-if="!loginUser && !resetPass && !resendConf" :disable="disableSignup" label="Sign up" type="submit" color="primary"/>
+      <q-btn v-if="!loginUser && !resetPass && !resendConf && !goToHomePageButtonVisible" :disable="disableSignup" label="Sign up" type="submit" color="primary"/>
       <q-btn v-if="goToHomePageButtonVisible" label="Goto Home Page" to="/" color="primary"/>
-      <q-btn v-if="loginUser && !resendConf" label="Login" color="green" type="submit" outline class="q-ml-sm" />
-      <q-btn v-if="loginUser && !resendConf" @click="resetPass = true; loginUser = false" label="Recover Password" color="green" flat class="q-ml-sm" />
-      <q-btn v-if="resetPass && !loginUser" label="Reset" @click="recoverPassword()" color="green" class="q-ml-sm" />
-      <q-btn v-if="resetPass && !loginUser" @click="resetPass = false; loginUser = true" label="Go Back" color="primary" flat class="q-ml-sm" />
-      <q-btn v-if="resendConf && !loginUser && !resetPass" label="Resend confirmation email" @click="_resendConfirmationEmail()" color="orange" type="submit" outline />
+      <q-btn v-if="loginUser && !resendConf && !goToHomePageButtonVisible" label="Login" color="green" type="submit" outline class="q-ml-sm" />
+      <q-btn v-if="loginUser && !resendConf && !goToHomePageButtonVisible" @click="resetPass = true; loginUser = false" label="Recover Password" color="green" flat class="q-ml-sm" />
+      <q-btn v-if="resetPass && !loginUser && !goToHomePageButtonVisible" label="Reset" @click="recoverPassword()" color="green" class="q-ml-sm" />
+      <q-btn v-if="resetPass && !loginUser && !goToHomePageButtonVisible" @click="resetPass = false; loginUser = true" label="Go Back" color="primary" flat class="q-ml-sm" />
+      <q-btn v-if="resendConf && !loginUser && !resetPass && !goToHomePageButtonVisible" label="Resend confirmation email" @click="_resendConfirmationEmail()" color="orange" type="submit" outline />
     </div>
   </q-form>
 
@@ -69,7 +69,7 @@ export default {
           state: this.$route.query.state
         }
       }).then((response) => {
-        console.log(response.data)
+        // console.log(response.data)
         this.$q.localStorage.set('userLogged', response.data.nodeId)
         for (var i = 0; i < response.data.emails.length; i++) {
           if (response.data.emails[i].visibility === 'private' || response.data.emails[i].visibility === 'public') {
@@ -207,25 +207,41 @@ export default {
           this.$q.sessionStorage.set('userAllocatedId', authedUser.id)
           this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
             // console.log(docs)
+            // this.$q.loading.hide()
+            this.$q.loading.show({ message: 'Accessing data, Please wait...' })
+            // console.log(docs)
             // Checking if user have already saved data, If so then get node if from it.
-            if (docs.length > 0) {
-              this.$q.sessionStorage.set('userSecDetails', docs)
-              // get latest details...
-              this.$axios.get(this.$backEnd + '/setupUserConfirmaion', {
-                params: {
+            if (docs.length > 0) { // check if nano account created **/ (and then 2nd condition) Lastest updation can be removed
+              // console.log(docs.account)
+              let paramsData = null
+              // console.log(docs)
+              if (!docs[0].account) {
+                paramsData = {
+                  state: this.$route.query.state,
+                  email_used: this.emailSelected,
+                  create_wallet: true
+                }
+              } else {
+                paramsData = {
                   state: this.$route.query.state,
                   email_used: this.emailSelected
                 }
+              }
+              this.$q.sessionStorage.set('userSecDetails', docs)
+              // get latest details...
+              this.$axios.get(this.$backEnd + '/setupUserConfirmaion', {
+                params: paramsData
               }).then((response) => {
                 // console.log(response.data)
                 let userId = {
                   user_auth_id: authedUser.id
                 }
                 let dataStringify = response.data
+                this.$q.loading.show({ message: 'Updating latest data from Github...' })
                 // console.log(dataStringify)
                 this.$db.collection('userInfo').updateOne(userId, { '$set': dataStringify }).then((result) => {
                   const { matchedCount, modifiedCount } = result
-                  console.log(result)
+                  // console.log(result)
                   if (matchedCount && modifiedCount) {
                     this.$db.collection('userInfo').find({ user_auth_id: authedUser.id }).asArray().then((docs) => {
                       // console.log(docs)
@@ -235,9 +251,36 @@ export default {
                           state: this.$route.query.state
                         }
                       }).then((res) => {
-                        console.log('Wallet Not in server anymore...')
-                        this.$q.loading.hide()
-                        this.goToHomePageButtonVisible = true
+                        let publicDataToInsert = { account: response.data.account, user_name: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
+                        this.$db.collection('publicUserInfo').find({ user_auth_id: authedUser.id }).asArray().then((publicDocs) => {
+                          if (publicDocs.length > 0) {
+                            this.$q.loading.show({ message: 'Updating public info...' })
+                            this.$db.collection('publicUserInfo').updateOne(userId, { '$set': publicDataToInsert }).then((result) => {
+                              const { matchedCount, modifiedCount } = result
+                              // console.log(result)
+                              if (matchedCount && modifiedCount) {
+                                console.log('Wallet Not in server anymore...')
+                                this.$q.loading.hide()
+                                this.goToHomePageButtonVisible = true
+                              }
+                            }).catch(err => {
+                              console.log(err)
+                              console.log('Wallet Not in server anymore...')
+                              this.$q.loading.hide()
+                              this.goToHomePageButtonVisible = true
+                            })
+                          } else {
+                            this.$q.loading.show({ message: 'Adding Public Info...' })
+                            this.$db.collection('publicUserInfo').insertOne(publicDataToInsert).then(res => {
+                              // console.log(res)
+                              console.log('Wallet Not in server anymore...')
+                              this.$q.loading.hide()
+                              this.goToHomePageButtonVisible = true
+                            }).catch(err => {
+                              console.log(err)
+                            })
+                          }
+                        })
                       }).catch(err => {
                         console.log(err)
                         window.location = this.$frontEnd
@@ -265,6 +308,7 @@ export default {
             } else { // If data is not there then do the insertion
               // Insertion
               try {
+                console.log('Hello User')
                 this.$axios.get(this.$backEnd + '/setupUserConfirmaion', {
                   params: {
                     state: this.$route.query.state,
@@ -277,29 +321,23 @@ export default {
                     user_auth_id: authedUser.id
                   }
                   let dataStringify = { ...response.data, ...userId }
-                  this.$db.collection('userInfo').insertOne(dataStringify, (err, res) => {
-                    if (err) {
-                      console.log(err)
-                    } else {
-                      this.$axios.get(this.$backEnd + '/remove/sensData', { // AXIOS CALL
-                        params: {
-                          state: this.$route.query.state
-                        }
-                      }).then((res) => {
-                        console.log('Wallet Not in server anymore...')
-                        let publicDataToInsert = { account: response.data.account, userName: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
-                        this.$db.collection('publicUserInfo').insertOne(publicDataToInsert, (err, res) => {
-                          if (err) {
-                            console.log(err)
-                          } else {
-                            this.$q.loading.hide()
-                            window.location = this.$frontEnd
-                          }
-                        })
-                      }).catch(err => {
-                        console.log(err)
+                  this.$q.loading.show({ message: 'Adding data, please wait...' })
+                  this.$db.collection('userInfo').insertOne(dataStringify).then(res => {
+                    this.$axios.get(this.$backEnd + '/remove/sensData', { // AXIOS CALL
+                      params: {
+                        state: this.$route.query.state
+                      }
+                    }).then((res) => {
+                      console.log('Wallet Not in server anymore...')
+                      let publicDataToInsert = { account: response.data.account, user_name: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
+                      this.$q.loading.show({ message: 'Adding public data...' })
+                      this.$db.collection('publicUserInfo').insertOne(publicDataToInsert).then(res => {
+                        this.$q.loading.hide()
+                        window.location = this.$frontEnd
                       })
-                    }
+                    }).catch(err => {
+                      console.log(err)
+                    })
                   })
                 })
               } catch (e) {
@@ -312,7 +350,7 @@ export default {
             this.$q.loading.hide()
             console.error(err)
           })
-          console.log('Signed')
+          // console.log('Signed')
           // }).catch((e) => {})
           // this.db.collection('globalTxs').updateOne({ user_auth_id: authedUser.id })
           // this.db.collection('nanoWallets').updateOne({ user_auth_id: authedUser.id })
