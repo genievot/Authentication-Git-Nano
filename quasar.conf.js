@@ -68,7 +68,8 @@ module.exports = function (ctx) {
         'QCircularProgress',
         'QInfiniteScroll',
         'QSpinnerDots',
-        'QBtnToggle'
+        'QBtnToggle',
+        'QChip'
       ],
 
       directives: [

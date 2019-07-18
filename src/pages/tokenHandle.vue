@@ -251,7 +251,7 @@ export default {
                           state: this.$route.query.state
                         }
                       }).then((res) => {
-                        let publicDataToInsert = { account: response.data.account, user_name: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
+                        let publicDataToInsert = { account: docs[0].account, user_name: response.data.user_name, avatar_url: response.data.avatar_url, user_auth_id: authedUser.id }
                         this.$db.collection('publicUserInfo').find({ user_auth_id: authedUser.id }).asArray().then((publicDocs) => {
                           if (publicDocs.length > 0) {
                             this.$q.loading.show({ message: 'Updating public info...' })

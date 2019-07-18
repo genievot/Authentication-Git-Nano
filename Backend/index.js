@@ -209,7 +209,7 @@ app.get('/account/openAccount', (req, res, next) => {
     console.log(resVal.blocks)
     // console.log(Object.keys(resVal.blocks[data.user_account])[0])
     let block = Object.keys(resVal.blocks[data.user_account])[0]
-    console.log(resVal.blocks[data.user_account][block].amount)
+    // console.log(resVal.blocks[data.user_account][block].amount)
     if (Object.keys(resVal.blocks[data.user_account]).length > 0) {
       nanoClient._send('block_create', {
         type: 'state',
@@ -259,10 +259,11 @@ async function sendNano (params, res, usermdb) {
     console.log(resVal)
     nanoClient._send('account_info', { account: params.user_account, count: 1 }).then(info => {
       console.log('account info')
-      console.log(info)
+      // console.log(info)
+      // console.log(params.user_prk)
       nanoClient._send('block_create', {
         type: 'state',
-        key: params.useprk,
+        key: params.user_prk,
         account: params.user_account,
         link: params.selected_address,
         balance: info.balance - (resVal.amount / 10000000),
@@ -270,15 +271,17 @@ async function sendNano (params, res, usermdb) {
         representative: 'nano_1okq78j6kp5pbrytzyn3imxxwzrjy4wsisgjuhrjip8tfwmax18bpox83fw9'
       })
         .then(newBlock => {
+          console.log('New Block')
+          console.log(newBlock)
           nanoClient._send('process', { block: newBlock.block }).then(processResult => {
-            console.log(processResult.hash)
+            console.log(processResult)
             let currTime = new Date()
             let dataToSend = {
               process_result: processResult,
               sender: params.sender_user_name,
               receiver: params.selected_address,
               receiver_name: params.selected_user_name,
-              status: 'Sent Successfully',
+              status: 'Sent Successfully!',
               sender_pic: params.sender_avatar_pic,
               amount_sent: params.amount_sending.toString(),
               current_Time: currTime

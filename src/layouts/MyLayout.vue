@@ -32,7 +32,7 @@
               class="bg-orange q-ml-sm"
               dense
               round
-              @click="showNanoSendDialog = true"
+              @click="getBalance(); showNanoSendDialog = true"
               aria-label="Make Transaction"
             >
               <q-icon name="attach_money" class="text-white"/>
@@ -67,7 +67,7 @@
               dense
               icon="account_balance_wallet"
               round
-              @click="showUserWalletDialog = true"
+              @click="getBalance(); showUserWalletDialog = true"
               aria-label="Show Account"
             >
               <q-popup-proxy v-if="this.accountBalances">
@@ -178,7 +178,7 @@
         <q-card-section>
         <div v-if="accountBalances" class="row justify-center">
           <span class='text-h6 text-weight-light text-grey-9'>Balance:&nbsp;</span>
-          <span class='text-h6 text-weight-light text-green'>{{this.accountBalances.mrai_balance}}</span>
+          <q-chip class='text-h6 text-weight-light text-green bg-grey-2' @click.native="amountToSend = accountBalances.mrai_balance">{{this.accountBalances.mrai_balance}}</q-chip>
           <span class='text-h6 text-weight-light text-grey-8'>&nbsp;NANO</span>
         </div>
         <div v-if="accountBalances" class="row justify-center">
@@ -364,7 +364,7 @@ export default {
         var successful = await document.execCommand('copy')
         // console.log(successful)
         var msg = successful ? 'successful' : 'unsuccessful'
-        alert('Value was copied ' + msg)
+        alert('Value copy operation is ' + msg)
       } catch (err) {
         alert('Oops, unable to copy')
       } finally {
@@ -372,7 +372,7 @@ export default {
       }
     },
     onSubmit () {
-      console.log('"Hello"')
+      // console.log('"Hello"')
       if (this.toggleDefaultButton === 'git') {
         let indexOfUser = this.allUserNames.indexOf(this.selectedUser)
         this.selectedAddress = this.allUsers[indexOfUser].account
@@ -407,11 +407,12 @@ export default {
           }
         }).then((response) => {
           console.log(response)
-          if (response.data.process_result) {
+          if (!response.data.process_result.error) {
             this.$q.notify({
               color: 'green',
               message: response.data.status
             })
+            this.getBalance()
             this.$stitchClient.auth.loginWithCredential(this.$q.sessionStorage.getItem('authCredentials')).then((authedUser) => {
               let moreData = {
                 user_auth_id: authedUser.id
@@ -427,8 +428,8 @@ export default {
             })
           } else {
             this.$q.notify({
-              color: 'warning',
-              message: response.data.error
+              color: 'red',
+              message: 'A problem occured while sending block.'
             })
           }
           // this.showNanoSendDialog = false
@@ -450,7 +451,7 @@ export default {
         abort()
         return
       }
-      console.log(val)
+      // console.log(val)
       update(() => {
         let userName = val.toLowerCase()
         this.filterUsers = this.allUserNames.filter(v => v.toLowerCase().indexOf(userName) > -1)
@@ -458,7 +459,7 @@ export default {
       this.showUserSearchResults = 'Please wait...'
       this.$stitchClient.auth.loginWithCredential(new this.$anonymousCredential()).then(user => {
         this.$db.collection('publicUserInfo').find({ user_name: { $regex: new RegExp('/^' + val + '/') } }).asArray().then((docs) => {
-          console.log(docs)
+          // console.log(docs)
           this.allUsers = docs
           this.allUserNames = []
           for (let index = 0; index < docs.length; index++) {
@@ -488,14 +489,14 @@ export default {
           users_data: dataGen
         }
       }).then((response) => {
-        console.log(response)
+        // console.log(response)
         this.loadingOnOpenAcc = false
         if (!response.data.error) {
           if (response.data.hash) {
-            this.isAccountOpened = false // Make the send button visible
+            this.isAccountOpened = true // Make the send button visible
             this.$q.notify({
-              color: 'grey-8',
-              message: response.data.message
+              color: 'green',
+              message: response.data.hash
             })
           } else {
             this.$q.notify({
@@ -545,9 +546,35 @@ export default {
     acceptedDialog () {
       this.$q.sessionStorage.set('showedWarningDialog', true)
       this.alertUserDialogShow = false
+    },
+    getBalance () {
+      this.$axios.get(this.$backEnd + '/account/balance', { // AXIOS CALL
+        params: {
+          user_account: this.userWallet.account
+        }
+      }).then((response) => {
+        this.accountBalances = response.data
+        if (response.data) {
+          this.gotAccountBalance = true
+        } else {
+          this.$q.notify({
+            color: 'warning',
+            message: 'Please restart browser, There is problem in getting your account balance.'
+          })
+        }
+        console.log(this.accountBalances)
+      }).catch((err) => {
+        console.log(err)
+        this.$q.notify({
+          color: 'warning',
+          message: err
+        })
+        this.gotAccountBalance = true
+      })
     }
   },
   mounted () {
+    this.getBalance()
     if (!this.$q.sessionStorage.getItem('showedWarningDialog')) {
       this.alertUserDialogShow = true
     }
@@ -608,29 +635,6 @@ export default {
         color: 'warning',
         message: err
       })
-    })
-    this.$axios.get(this.$backEnd + '/account/balance', { // AXIOS CALL
-      params: {
-        user_account: this.userWallet.account
-      }
-    }).then((response) => {
-      this.accountBalances = response.data
-      if (response.data) {
-        this.gotAccountBalance = true
-      } else {
-        this.$q.notify({
-          color: 'warning',
-          message: 'Please restart browser, There is problem in getting your account balance.'
-        })
-      }
-      console.log(this.accountBalances)
-    }).catch((err) => {
-      console.log(err)
-      this.$q.notify({
-        color: 'warning',
-        message: err
-      })
-      this.gotAccountBalance = true
     })
     // console.log(this.$q.sessionStorage.getItem('userSecDetails'))
     // console.log(this.$q.localStorage.getItem('userLogged'))
