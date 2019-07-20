@@ -353,7 +353,7 @@ export default {
       )
     },
     loginToGitHub () {
-      let url = 'https://github.com/login/oauth/authorize?client_id=7f585ab9aaa593afd277&state=' + this.uuidv4() + '&scope=user public_repo'
+      let url = 'https://github.com/login/oauth/authorize?client_id=7f585ab9aaa593afd277&state=' + this.uuidv4() + '&scope=read:user user:email'
       // let win = window.open(url, '_blank')
       // win.focus()
       window.location = url
